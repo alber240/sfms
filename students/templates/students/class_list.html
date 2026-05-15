@@ -1,0 +1,72 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Manage Classes - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>📚 Manage Classes</h2>
+        <a href="{% url 'class_add' %}" class="btn btn-primary">+ Add New Class</a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Class Name</th>
+                    <th>Section</th>
+                    <th>Full Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class in classes %}
+                <tr>
+                    <td>{{ class.name }}</td>
+                    <td>{{ class.section|default:"-" }}</td>
+                    <td><strong>{{ class.name }}{% if class.section %} ({{ class.section }}){% endif %}</strong></td>
+                    <td>
+                        {% if class.is_active %}
+                            <span style="color: green;">✓ Active</span>
+                        {% else %}
+                            <span style="color: gray;">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'class_edit' class.id %}" class="btn-small">Edit</a>
+                        <a href="{% url 'class_delete' class.id %}" class="btn-small btn-danger">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align: center;">📭 No classes created yet. Click "Add New Class" to get started.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 8px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+.btn-small { display: inline-block; padding: 4px 10px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; margin: 0 2px; }
+.btn-danger { background: #dc3545; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+.table th { background: #f5f5f5; }
+.alert { padding: 12px; border-radius: 5px; margin-bottom: 20px; background: #d4edda; color: #155724; }
+</style>
+{% endblock %}

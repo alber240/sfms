@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Summary - {{ payroll_period.get_month_display }} {{ payroll_period.year }}</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 0; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .summary {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .school-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .title {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+        
+        .total-row {
+            background: #e8f5e9;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+        }
+        
+        button {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()">🖨️ Print Summary Sheet</button>
+        <button onclick="window.location.href='/payroll/history/'">📋 Back to History</button>
+    </div>
+    
+    <div class="summary">
+        <div class="header">
+            <div class="school-name">SFMS SCHOOL</div>
+            <div class="title">PAYROLL SUMMARY SHEET</div>
+            <div>{{ payroll_period.get_month_display }} {{ payroll_period.year }}</div>
+            <div>Processed: {{ payroll_period.processed_at|date:"F d, Y H:i" }}</div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Staff ID</th>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Base Salary</th>
+                    <th>Deductions</th>
+                    <th>Net Pay</th>
+                    <th>Signature</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.staff.staff_id }}</a></a></td>
+                    <td>{{ entry.staff.name }}</a></a></td>
+                    <td>{{ entry.staff.position }}</a></a></td>
+                    <td>
+                        {% if entry.base_salary_lrd > 0 %}{{ entry.base_salary_lrd|floatformat:2 }} LRD{% endif %}
+                        {% if entry.base_salary_usd > 0 %}{{ entry.base_salary_usd|floatformat:2 }} USD{% endif %}
+                      </a></a></td>
+                    <td>
+                        {% if entry.deduction_lrd > 0 %}{{ entry.deduction_lrd|floatformat:2 }} LRD{% endif %}
+                        {% if entry.deduction_reason %}<br><small>{{ entry.deduction_reason|truncatechars:30 }}</small>{% endif %}
+                      </a></a></td>
+                    <td>
+                        <strong>
+                            {% if entry.net_pay_lrd > 0 %}{{ entry.net_pay_lrd|floatformat:2 }} LRD{% endif %}
+                            {% if entry.net_pay_usd > 0 %}{{ entry.net_pay_usd|floatformat:2 }} USD{% endif %}
+                        </strong>
+                      </a></a></td>
+                    <td>_________________</a></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5"><strong>GRAND TOTAL</strong></a></a></td>
+                    <td colspan="2"><strong>
+                        {% if total_lrd > 0 %}{{ total_lrd|floatformat:2 }} LRD{% endif %}
+                        {% if total_usd > 0 %}{{ total_usd|floatformat:2 }} USD{% endif %}
+                    </strong></a></a></td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div class="footer">
+            <p>I certify that the above payroll has been paid in full.</p>
+            <p>_________________________</p>
+            <p>Accountant Signature & Date</p>
+        </div>
+    </div>
+</body>
+</html>

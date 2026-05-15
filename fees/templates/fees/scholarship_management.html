@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Scholarship Management - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>?? Scholarship Management</h1>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'add_scholarship' %}" class="btn btn-primary">+ Add New Scholarship</a>
+        <a href="{% url 'fee_settings' %}" class="btn">Back to Fee Settings</a>
+    </div>
+    
+    <div class="card">
+        <h3>Available Scholarships</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Discount</th>
+                    <th>Applies To</th>
+                    <th>Semester</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in scholarships %}
+                <tr>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.get_category_display }}</td>
+                    <td>{% if s.is_percentage %}{{ s.discount_value }}%{% else %}{{ s.discount_value }} LRD{% endif %}</td>
+                    <td>
+                        {% if s.applies_to_categories.all %}
+                            {% for cat in s.applies_to_categories.all %}
+                                {{ cat.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <em>All Categories</em>
+                        {% endif %}
+                    </td>
+                    <td>{{ s.get_applies_to_semester_display }}</td>
+                    <td>
+                        <a href="{% url 'edit_scholarship' s.id %}" class="btn-small">Edit</a>
+                        <a href="{% url 'delete_scholarship' s.id %}" class="btn-small btn-danger">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">No scholarships configured</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

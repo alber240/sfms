@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Scholarship - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>?? Assign Scholarship to {{ student.full_name }}</h1>
+    
+    <div class="card" style="margin-bottom: 20px;">
+        <h3>Student Information</h3>
+        <p><strong>Admission #:</strong> {{ student.admission_number }}</p>
+        <p><strong>Class:</strong> {{ student.class_name }}</p>
+    </div>
+    
+    <div class="card" style="margin-bottom: 20px;">
+        <h3>Current Scholarships</h3>
+        {% if student_scholarships %}
+            <table class="table">
+                <thead><tr><th>Scholarship</th><th>Year</th><th>Discount</th></tr></thead>
+                <tbody>
+                    {% for ss in student_scholarships %}
+                    <tr>
+                        <td>{{ ss.scholarship.name }}</td>
+                        <td>{{ ss.academic_year }}</td>
+                        <td>{% if ss.scholarship.is_percentage %}{{ ss.scholarship.discount_value }}%{% else %}{{ ss.scholarship.discount_value }} LRD{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No scholarships assigned yet.</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h3>Add New Scholarship</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Select Scholarship</label>
+                <select name="scholarship" required>
+                    <option value="">-- Select Scholarship --</option>
+                    {% for s in available_scholarships %}
+                    <option value="{{ s.id }}">
+                        {{ s.name }} - {% if s.is_percentage %}{{ s.discount_value }}% discount{% else %}{{ s.discount_value }} LRD{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" name="academic_year" value="2024">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Assign Scholarship</button>
+                <a href="{% url 'student_detail' student.id %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Category - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>? Add Expense Category</h1>
+    
+    <form method="post" class="form" style="max-width: 500px; margin-top: 20px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Category Name *</label>
+            <input type="text" name="name" placeholder="e.g., Salaries, Stationery, Exams" required>
+            <small style="color: #666;">Full name of the category</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Category Code *</label>
+            <input type="text" name="code" placeholder="e.g., SAL, STA, EXM" required maxlength="10">
+            <small style="color: #666;">Short code (max 10 characters)</small>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Category</button>
+            <a href="{% url 'settings_dashboard' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+    
+    <div style="margin-top: 30px;">
+        <h3>Suggested Categories:</h3>
+        <ul>
+            <li>Salaries (SAL)</li>
+            <li>Stationery (STA)</li>
+            <li>Exams (EXM)</li>
+            <li>Maintenance (MNT)</li>
+            <li>PTA Activities (PTA)</li>
+            <li>Utilities (UTL)</li>
+            <li>Other (OTH)</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

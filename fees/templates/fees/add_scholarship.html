@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Scholarship - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>? Add Scholarship</h1>
+    
+    <form method="post" class="form" style="max-width: 700px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Scholarship Name *</label>
+            <input type="text" name="name" required placeholder="e.g., Football Scholarship, Academic Excellence">
+        </div>
+        
+        <div class="form-group">
+            <label>Category *</label>
+            <select name="category" required>
+                <option value="ACADEMIC">Academic Excellence</option>
+                <option value="SPORTS">Sports</option>
+                <option value="NEED_BASED">Need Based</option>
+                <option value="MERIT">Merit</option>
+                <option value="SPECIAL">Special</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_percentage" checked> Percentage Discount
+            </label>
+            <small>If checked, discount is percentage of fees; if unchecked, fixed amount in LRD</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Discount Value *</label>
+            <input type="number" name="discount_value" step="0.01" required placeholder="e.g., 50 for 50% or 10000 for 10000 LRD">
+        </div>
+        
+        <div class="form-group">
+            <label>Applies to Which Semester?</label>
+            <select name="applies_to_semester">
+                <option value="YEARLY">Yearly (Both Semesters)</option>
+                <option value="SEMESTER_1">1st Semester Only</option>
+                <option value="SEMESTER_2">2nd Semester Only</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Applies to Which Fee Categories?</label>
+            <select name="applies_to_categories" multiple size="6" style="height: auto;">
+                <option value="">-- Apply to ALL Categories (leave empty) --</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.code }})</option>
+                {% endfor %}
+            </select>
+            <small>Hold Ctrl to select multiple. Leave empty to apply to ALL fee categories.</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Max Students (0 = unlimited)</label>
+            <input type="number" name="max_students" value="0">
+        </div>
+        
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" rows="3" placeholder="Describe the scholarship requirements"></textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Scholarship</button>
+            <a href="{% url 'scholarship_management' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+select[multiple] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    min-height: 150px;
+}
+</style>
+{% endblock %}

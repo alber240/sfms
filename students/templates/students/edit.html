@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Student - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Edit Student</h1>
+    
+    <form method="post" class="form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Admission Number</label>
+            <input type="text" value="{{ student.admission_number }}" disabled>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>First Name *</label>
+                <input type="text" name="first_name" value="{{ student.first_name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Last Name *</label>
+                <input type="text" name="last_name" value="{{ student.last_name }}" required>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Class</label>
+            <select name="class_assigned">
+                <option value="">Select Class</option>
+                {% for class in classes %}
+                <option value="{{ class.id }}" {% if student.class_assigned.id == class.id %}selected{% endif %}>{{ class.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Parent Name</label>
+            <input type="text" name="parent_name" value="{{ student.parent_name }}">
+        </div>
+        
+        <div class="form-group">
+            <label>Parent Phone</label>
+            <input type="tel" name="parent_phone" value="{{ student.parent_phone }}">
+        </div>
+        
+        <div class="form-group">
+            <label>Alternative Phone</label>
+            <input type="tel" name="parent_phone_alternative" value="{{ student.parent_phone_alternative }}">
+        </div>
+        
+        <div class="form-group">
+            <label>Address</label>
+            <textarea name="address" rows="3">{{ student.address }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Notes</label>
+            <textarea name="notes" rows="2">{{ student.notes }}</textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Student</button>
+            <a href="{% url 'student_list' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

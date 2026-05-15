@@ -1,0 +1,86 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Academic Years - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>📅 Academic Year Management</h1>
+    <p>Set the current academic year and semester. This will be used as default throughout the system.</p>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'add_academic_session' %}" class="btn btn-primary">+ Add New Academic Year</a>
+        <a href="{% url 'fee_settings' %}" class="btn">Back to Settings</a>
+    </div>
+    
+    <div class="card">
+        <h3>Academic Years</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Academic Year</th>
+                    <th>Current Semester</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td><strong>{{ session.academic_year }}</strong><br>
+                        <small>{{ session.start_date|date:"M d, Y" }} - {{ session.end_date|date:"M d, Y" }}</small>
+                    </td>
+                    <td>{{ session.get_current_semester_display }}</td>
+                    <td>
+                        {% if session.is_active %}
+                            <span style="color: green; font-weight: bold;">✓ Active (Current)</span>
+                        {% else %}
+                            <span style="color: gray;">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not session.is_active %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="session_id" value="{{ session.id }}">
+                            <button type="submit" name="activate_session" class="btn-small">Set as Active</button>
+                        </form>
+                        {% endif %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="session_id" value="{{ session.id }}">
+                            <select name="semester">
+                                <option value="FIRST" {% if session.current_semester == 'FIRST' %}selected{% endif %}>1st Semester</option>
+                                <option value="SECOND" {% if session.current_semester == 'SECOND' %}selected{% endif %}>2nd Semester</option>
+                            </select>
+                            <button type="submit" name="set_semester" class="btn-small">Set Semester</button>
+                        </form>
+                     </td>
+                  </tr>
+                {% empty %}
+                <tr><td colspan="4">No academic years configured. Click "Add New Academic Year" to start.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="info-box" style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+        <strong>💡 How it works:</strong>
+        <ul style="margin-top: 10px;">
+            <li>The <strong>Active Academic Year</strong> will be automatically selected when you visit the Fee Matrix</li>
+            <li>You can still change the year manually if needed</li>
+            <li>Set the <strong>Current Semester</strong> to control which semester fees are due</li>
+            <li>When recording payments, the current semester will be pre-selected</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; margin-top: 20px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; }
+.btn-primary { background: #1e3c72; }
+.btn-small { display: inline-block; padding: 5px 10px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; border: none; cursor: pointer; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+.table th { background: #f5f5f5; }
+</style>
+{% endblock %}

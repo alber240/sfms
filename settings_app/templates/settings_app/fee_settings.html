@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Fee Settings - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="alert alert-warning">
+        <h2>?? Wrong URL</h2>
+        <p>The fee settings page has moved. Please use the correct link:</p>
+        <a href="/fees/settings/" class="btn btn-primary">Go to Fee Settings ?</a>
+    </div>
+</div>
+
+<style>
+.alert {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin-top: 50px;
+}
+.btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #1e3c72;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+</style>
+{% endblock %}

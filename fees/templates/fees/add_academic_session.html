@@ -1,0 +1,60 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Add Academic Year - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <h2>➕ Add Academic Year</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Academic Year *</label>
+                <input type="text" name="academic_year" required placeholder="e.g., 2024-2025">
+                <small>Format: YYYY-YYYY (e.g., 2024-2025)</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" placeholder="e.g., 2024-2025 Academic Year">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" name="start_date" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="end_date" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Initial Semester</label>
+                <select name="current_semester">
+                    <option value="FIRST">1st Semester</option>
+                    <option value="SECOND">2nd Semester</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Academic Year</button>
+                <a href="{% url 'academic_session_settings' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+.form-group small { display: block; color: #666; margin-top: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+</style>
+{% endblock %}

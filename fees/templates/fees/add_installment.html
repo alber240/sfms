@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Installment Plan - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Add Installment Plan</h1>
+    
+    <form method="post" class="form" style="max-width: 600px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Class</label>
+            <select name="class_assigned" required>
+                <option value="">Select Class</option>
+                {% for class in classes %}
+                <option value="{{ class.id }}">{{ class.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Term</label>
+            <select name="term" required>
+                <option value="Term 1">Term 1</option>
+                <option value="Term 2">Term 2</option>
+                <option value="Term 3">Term 3</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Academic Year</label>
+            <input type="text" name="academic_year" value="2024" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Installment Number</label>
+            <input type="number" name="installment_number" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" name="due_date" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Percentage of Total Fees (%)</label>
+            <input type="number" name="percentage" step="0.01" required>
+            <small>e.g., 25 for 25% of total fees</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Description (Optional)</label>
+            <textarea name="description" rows="2"></textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Installment Plan</button>
+            <a href="{% url 'fee_settings' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

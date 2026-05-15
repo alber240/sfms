@@ -1,0 +1,56 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Payroll History - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>📜 Payroll History</h1>
+    
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Year</th>
+                    <th>Processed By</th>
+                    <th>Processed At</th>
+                    <th>Total Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payroll in payroll_periods %}
+                <tr>
+                    <td>{{ payroll.get_month_display }}</a></td>
+                    <td>{{ payroll.year }}</a></td>
+                    <td>{{ payroll.processed_by.username }}</a></td>
+                    <td>{{ payroll.processed_at|date:"Y-m-d H:i" }}</a></td>
+                    <td>
+                        {% if payroll.total_amount_lrd > 0 %}{{ payroll.total_amount_lrd }} LRD{% endif %}
+                        {% if payroll.total_amount_usd > 0 %}{{ payroll.total_amount_usd }} USD{% endif %}
+                      </a></td>
+                    <td>
+                        <a href="{% url 'payroll_detail' payroll.id %}" class="btn-small">View Details</a>
+                        <button onclick="window.print()" class="btn-small">Print</button>
+                      </a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align: center;">No payroll processed yet</a></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'staff_list' %}" class="btn">← Back to Staff</a>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; }
+.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; margin: 0 2px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+.table th { background: #f5f5f5; }
+</style>
+{% endblock %}

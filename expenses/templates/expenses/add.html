@@ -1,0 +1,162 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Add Expense - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>💳 Record Expense</h1>
+    
+    <form method="post" enctype="multipart/form-data" class="form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Category *</label>
+            <select name="category" required class="form-control">
+                <option value="">Select Category</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Description *</label>
+            <textarea name="description" rows="3" required placeholder="What was purchased?"></textarea>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>Amount (LRD)</label>
+                <input type="number" name="amount_lrd" step="0.01" placeholder="0.00">
+            </div>
+            
+            <div class="form-group">
+                <label>Amount (USD)</label>
+                <input type="number" name="amount_usd" step="0.01" placeholder="0.00">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📸 Receipt Photo (Optional)</label>
+            <div class="photo-upload-area" id="photoUploadArea">
+                <div class="upload-icon">📷</div>
+                <p>Click to take photo or upload image</p>
+                <input type="file" name="receipt_photo" accept="image/*" capture="environment" id="photoInput" style="display: none;">
+                <button type="button" class="btn btn-info" onclick="document.getElementById('photoInput').click()">
+                    📸 Take Photo / Upload
+                </button>
+            </div>
+            <div id="photoPreview" style="display: none; margin-top: 15px;">
+                <img id="previewImage" src="#" alt="Receipt preview" style="max-width: 100%; max-height: 200px; border: 1px solid #ddd; border-radius: 5px;">
+                <button type="button" class="btn-small" onclick="clearPhoto()">Remove</button>
+            </div>
+            <small>Take a photo of the receipt using your phone camera or upload an image file</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Notes (Optional)</label>
+            <textarea name="notes" rows="2" placeholder="Additional notes about this expense"></textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Expense</button>
+            <a href="{% url 'expense_list' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.photo-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    background: #fafafa;
+}
+.photo-upload-area:hover {
+    border-color: #1e3c72;
+    background: #f0f2f5;
+}
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+}
+.btn-primary {
+    background: #1e3c72;
+}
+.btn-info {
+    background: #17a2b8;
+}
+.btn-small {
+    display: inline-block;
+    padding: 5px 10px;
+    background: #dc3545;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 12px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+</style>
+
+<script>
+// Photo upload preview
+document.getElementById('photoInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            document.getElementById('previewImage').src = event.target.result;
+            document.getElementById('photoPreview').style.display = 'block';
+            document.getElementById('photoUploadArea').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+function clearPhoto() {
+    document.getElementById('photoInput').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoUploadArea').style.display = 'block';
+}
+
+// Click on upload area to trigger file input
+document.getElementById('photoUploadArea').addEventListener('click', function() {
+    document.getElementById('photoInput').click();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,52 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Fee Settings - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 50px auto; padding: 40px; text-align: center; background: white; border-radius: 10px;">
+        <h1>💰 Fee Structure Management</h1>
+        <p style="margin: 20px 0; color: #666;">The fee structure has been upgraded to a new matrix system.</p>
+        
+        <div style="margin: 30px 0;">
+            <a href="/fees/fee-matrix/" class="btn btn-primary" style="padding: 15px 30px; font-size: 18px;">
+                📊 Go to Fee Matrix
+            </a>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; text-align: left;">
+            <strong>📌 What's New:</strong>
+            <ul style="margin-top: 10px;">
+                <li>Set fees for Yearly, 1st Semester, and 2nd Semester separately</li>
+                <li>Different amounts for New Students vs Returning Students</li>
+                <li>Auto-calculation of Yearly total from Semester 1 + Semester 2</li>
+                <li>Support for both LRD and USD per fee category</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <a href="/settings/" class="btn">← Back to Settings</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.btn-primary {
+    background: #1e3c72;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+</style>
+{% endblock %}

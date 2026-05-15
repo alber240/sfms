@@ -1,0 +1,75 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Staff Management - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>👥 Staff Management</h1>
+        <div>
+            <a href="{% url 'staff_add' %}" class="btn btn-primary">+ Add Staff</a>
+            <a href="{% url 'process_payroll' %}" class="btn btn-success">💰 Bulk Payroll</a>
+            <a href="{% url 'payroll_history' %}" class="btn btn-info">📜 Payroll History</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Monthly Salary</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for staff in staff_members %}
+                <tr>
+                    <td>{{ staff.staff_id }}</td>
+                    <td>{{ staff.name }}</td>
+                    <td>{{ staff.position }}</td>
+                    <td>
+                        {% if staff.monthly_salary_lrd > 0 %}{{ staff.monthly_salary_lrd }} LRD{% endif %}
+                        {% if staff.monthly_salary_lrd > 0 and staff.monthly_salary_usd > 0 %}<br>{% endif %}
+                        {% if staff.monthly_salary_usd > 0 %}{{ staff.monthly_salary_usd }} USD{% endif %}
+                    </td>
+                    <td>{{ staff.phone|default:"-" }}</td>
+                    <td>
+                        <a href="{% url 'staff_edit' staff.id %}" class="btn-small">Edit</a>
+                        <a href="{% url 'staff_advance' staff.id %}" class="btn-small btn-info">Deduction</a>
+                        <a href="{% url 'pay_staff_individual' staff.id %}" class="btn-small btn-success">Pay</a>
+                        <a href="{% url 'staff_payroll_history' staff.id %}" class="btn-small btn-warning">History</a>
+                        <a href="{% url 'staff_delete' staff.id %}" class="btn-small btn-danger">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No staff members added yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; margin: 2px; }
+.btn-primary { background: #1e3c72; }
+.btn-success { background: #28a745; }
+.btn-info { background: #17a2b8; }
+.btn-warning { background: #ffc107; color: #856404; }
+.btn-danger { background: #dc3545; }
+.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; margin: 0 2px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+.table th { background: #f5f5f5; }
+</style>
+{% endblock %}

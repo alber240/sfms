@@ -1,0 +1,158 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Record Payment - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>?? Record Payment</h1>
+    
+    {% if not student %}
+    <div class="search-box">
+        <h3>Find Student</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="search" placeholder="Search by name, admission number, or parent phone..." 
+                   value="{{ search }}" style="width: 70%; padding: 10px;">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        
+        {% if students %}
+        <div style="margin-top: 20px;">
+            <h4>Select Student:</h4>
+            {% for s in students %}
+            <div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>{{ s.full_name }}</strong><br>
+                    <small>Admission: {{ s.admission_number }} | Class: {{ s.get_get_class_name|default:"Not assigned" }} | Phone: {{ s.parent_phone|default:"-" }}</small>
+                    <br>
+                    <small style="color: {% if s.balance_lrd > 0 %}red{% else %}green{% endif %};">
+                        Balance: {{ s.balance_lrd|floatformat:2 }} LRD / {{ s.balance_usd|floatformat:2 }} USD
+                    </small>
+                </div>
+                <a href="{% url 'payment_entry' s.id %}" class="btn-small">Select & Pay</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% elif search %}
+        <p style="margin-top: 20px;">No students found matching "{{ search }}"</p>
+        {% endif %}
+    </div>
+    {% else %}
+    
+    <!-- Student Balance Display -->
+    <div class="student-balance" style="background: {% if balance_lrd > 0 %}#ffebee{% else %}#e8f5e9{% endif %}; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h3>Student Information</h3>
+        <p><strong>Name:</strong> {{ student.full_name }}</p>
+        <p><strong>Admission #:</strong> {{ student.admission_number }}</p>
+        <p><strong>Class:</strong> {{ student.get_get_class_name|default:"Not assigned" }}</p>
+        
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #ddd;">
+            <h3>Fee Summary</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <strong>Total Due:</strong><br>
+                    {{ total_due_lrd|floatformat:2 }} LRD<br>
+                    {{ total_due_usd|floatformat:2 }} USD
+                </div>
+                <div>
+                    <strong>Outstanding Balance:</strong><br>
+                    <span style="font-size: 24px; font-weight: bold; color: {% if balance_lrd > 0 %}red{% else %}green{% endif %};">
+                        {{ balance_lrd|floatformat:2 }} LRD
+                    </span><br>
+                    {{ balance_usd|floatformat:2 }} USD
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <form method="post" class="form">
+        {% csrf_token %}
+        <input type="hidden" name="student_id" value="{{ student.id }}">
+        
+                <div class="form-group">
+            <label>Payment Period *</label>
+            <select name="payment_period" required class="payment-period-select">
+                <option value="FIRST">1st Semester (Active Period)</option>
+                <option value="SECOND">2nd Semester</option>
+                <option value="YEARLY">Yearly (Both Semesters - Full Payment)</option>
+            </select>
+            <small>Select which semester this payment applies to. Yearly payment covers both semesters.</small>
+        </div>
+<div class="form-row">
+            <div class="form-group">
+                <label>Amount (LRD)</label>
+                <input type="number" name="amount_lrd" step="0.01" placeholder="0.00" 
+                       max="{{ balance_lrd }}" {% if balance_lrd == 0 %}disabled{% endif %}>
+                {% if balance_lrd > 0 %}
+                <small>Max: {{ balance_lrd|floatformat:2 }} LRD</small>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label>Amount (USD)</label>
+                <input type="number" name="amount_usd" step="0.01" placeholder="0.00"
+                       max="{{ balance_usd }}" {% if balance_usd == 0 %}disabled{% endif %}>
+                {% if balance_usd > 0 %}
+                <small>Max: {{ balance_usd|floatformat:2 }} USD</small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Payment Method</label>
+            <select name="payment_method">
+                <option value="CASH">Cash</option>
+                <option value="MOBILE_MONEY">Mobile Money</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="mobile_field" style="display: none;">
+            <label>Mobile Money Transaction ID</label>
+            <input type="text" name="mobile_transaction_id" placeholder="Enter transaction ID from SMS">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Generate Receipt</button>
+            <a href="{% url 'quick_payment' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+    const paymentMethod = document.querySelector('select[name="payment_method"]');
+    const mobileField = document.getElementById('mobile_field');
+    
+    if (paymentMethod) {
+        paymentMethod.addEventListener('change', function() {
+            if (this.value === 'MOBILE_MONEY') {
+                mobileField.style.display = 'block';
+            } else {
+                mobileField.style.display = 'none';
+            }
+        });
+    }
+</script>
+
+<style>
+.student-balance {
+    margin-bottom: 20px;
+}
+.btn-primary {
+    background: #1e3c72;
+    color: white;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+</style>
+{% endblock %}
+
+

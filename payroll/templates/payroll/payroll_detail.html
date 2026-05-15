@@ -1,0 +1,96 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Payroll Details - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Payroll Details: {{ payroll.get_month_display }} {{ payroll.year }}</h1>
+    
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <strong>Processed By:</strong> {{ payroll.processed_by.username }}<br>
+                <strong>Processed At:</strong> {{ payroll.processed_at|date:"Y-m-d H:i" }}
+            </div>
+            <div>
+                <strong>Total Payroll:</strong> 
+                {% if payroll.total_amount_lrd > 0 %}{{ payroll.total_amount_lrd|floatformat:2 }} LRD{% endif %}
+                {% if payroll.total_amount_lrd > 0 and payroll.total_amount_usd > 0 %} / {% endif %}
+                {% if payroll.total_amount_usd > 0 %}{{ payroll.total_amount_usd|floatformat:2 }} USD{% endif %}
+            </div>
+        </div>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Staff ID</th>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Base Salary</th>
+                    <th>Deduction</th>
+                    <th>Net Pay</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.staff.staff_id }}</a></a></td>
+                    <td>{{ entry.staff.name }}</a></a></a></td>
+                    <td>{{ entry.staff.position }}</a></a></a></td>
+                    <td>
+                        {% if entry.base_salary_lrd > 0 %}{{ entry.base_salary_lrd|floatformat:2 }} LRD{% endif %}
+                        {% if entry.base_salary_lrd > 0 and entry.base_salary_usd > 0 %}<br>{% endif %}
+                        {% if entry.base_salary_usd > 0 %}{{ entry.base_salary_usd|floatformat:2 }} USD{% endif %}
+                      </a></a></td>
+                    <td>
+                        {% if entry.deduction_lrd > 0 %}{{ entry.deduction_lrd|floatformat:2 }} LRD{% endif %}
+                        {% if entry.deduction_lrd > 0 and entry.deduction_usd > 0 %}<br>{% endif %}
+                        {% if entry.deduction_usd > 0 %}{{ entry.deduction_usd|floatformat:2 }} USD{% endif %}
+                        {% if entry.deduction_reason %}
+                            <br><small style="color: #666;">({{ entry.deduction_reason|truncatechars:30 }})</small>
+                        {% endif %}
+                      </a></a></td>
+                    <td>
+                        <strong>
+                            {% if entry.net_pay_lrd > 0 %}{{ entry.net_pay_lrd|floatformat:2 }} LRD{% endif %}
+                            {% if entry.net_pay_lrd > 0 and entry.net_pay_usd > 0 %}<br>{% endif %}
+                            {% if entry.net_pay_usd > 0 %}{{ entry.net_pay_usd|floatformat:2 }} USD{% endif %}
+                        </strong>
+                      </a></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5"><strong>Total</strong></a></a></td>
+                    <td>
+                        <strong>
+                            {% if payroll.total_amount_lrd > 0 %}{{ payroll.total_amount_lrd|floatformat:2 }} LRD{% endif %}
+                            {% if payroll.total_amount_lrd > 0 and payroll.total_amount_usd > 0 %}<br>{% endif %}
+                            {% if payroll.total_amount_usd > 0 %}{{ payroll.total_amount_usd|floatformat:2 }} USD{% endif %}
+                        </strong>
+                      </a></a></td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div class="no-print" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="window.print()" class="btn btn-primary">🖨️ Print Payroll Sheet</button>
+            <a href="{% url 'payroll_history' %}" class="btn">← Back to History</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; }
+.btn-primary { background: #1e3c72; }
+@media print { 
+    .no-print { display: none; } 
+    .btn, .btn-primary { display: none; }
+}
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
+.table th { background: #f5f5f5; }
+</style>
+{% endblock %}

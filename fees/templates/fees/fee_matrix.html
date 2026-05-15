@@ -1,0 +1,233 @@
+﻿{% extends 'base.html' %}
+{% load fees_extras %}
+
+{% block title %}Fee Structure Matrix - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>💰 Fee Structure Matrix</h1>
+    <p>Set fees for {{ academic_year }} - Separate amounts for New and Returning Students</p>
+    
+    <div style="margin-bottom: 20px;">
+        <form method="get" style="display: inline-block;">
+            <label>Academic Year:</label>
+            <input type="text" name="academic_year" value="{{ academic_year }}" size="6">
+            <button type="submit" class="btn">Load</button>
+        </form>
+        
+        <div style="float: right;">
+            <a href="/fees/academic-sessions/" class="btn btn-info">Manage Sessions</a>
+            <a href="/fees/auto-assign-v2/?academic_year={{ academic_year }}" class="btn btn-success">Auto-Assign Fees</a>
+        </div>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div style="overflow-x: auto;">
+            <table class="fee-table">
+                <thead>
+                    <tr class="header-main">
+                        <th rowspan="2" style="background: #1e3c72; color: white; padding: 12px; min-width: 100px;">Class</th>
+                        <th rowspan="2" style="background: #1e3c72; color: white; padding: 12px; min-width: 120px;">Student Type</th>
+                        <th rowspan="2" style="background: #1e3c72; color: white; padding: 12px; min-width: 100px;">Fee Category</th>
+                        <th colspan="3" style="background: #2e7d32; color: white; padding: 12px;">Yearly (Both Semesters)</th>
+                        <th colspan="3" style="background: #1565c0; color: white; padding: 12px;">1st Semester</th>
+                        <th colspan="3" style="background: #e65100; color: white; padding: 12px;">2nd Semester</th>
+                      </tr>
+                    <tr class="header-sub">
+                        <th style="background: #388e3c; color: white; padding: 8px;">LRD</th>
+                        <th style="background: #388e3c; color: white; padding: 8px;">USD</th>
+                        <th style="background: #388e3c; color: white; padding: 8px; width: 40px;"></th>
+                        <th style="background: #1976d2; color: white; padding: 8px;">LRD</th>
+                        <th style="background: #1976d2; color: white; padding: 8px;">USD</th>
+                        <th style="background: #1976d2; color: white; padding: 8px; width: 40px;"></th>
+                        <th style="background: #ef6c00; color: white; padding: 8px;">LRD</th>
+                        <th style="background: #ef6c00; color: white; padding: 8px;">USD</th>
+                      </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                        {% for student_type in student_types %}
+                            {% for category in categories %}
+                            <tr class="data-row">
+                                {% if forloop.parentloop.first and forloop.first %}
+                                <td rowspan="{{ student_types|length|add:categories|length }}" style="vertical-align: middle; background: #e3f2fd; font-weight: bold; border: 1px solid #ddd;">
+                                    {{ class.name }}
+                                  </td>
+                                {% endif %}
+                                {% if forloop.first %}
+                                <td rowspan="{{ categories|length }}" style="vertical-align: middle; background: {% if student_type == 'NEW' %}#fff3e0{% else %}#e8eaf6{% endif %}; font-weight: bold; border: 1px solid #ddd;">
+                                    {% if student_type == 'NEW' %}
+                                        🆕 New Student
+                                    {% else %}
+                                        🔄 Returning Student
+                                    {% endif %}
+                                  </td>
+                                {% endif %}
+                                <td style="background: #fafafa; border: 1px solid #ddd;">
+                                    <strong>{{ category.name }}</strong><br>
+                                    <small style="color: #666;">({{ category.code }})</small>
+                                  </td>
+                                {% with data=fee_matrix|get_item:class.id|get_item:student_type|get_item:category.id %}
+                                <!-- Yearly Amount (Auto-calculated) -->
+                                <td style="background: #e8f5e9; border: 1px solid #ddd;">
+                                    <input type="number" name="fee_{{ class.id }}_{{ student_type }}_{{ category.id }}_yearly_LRD" 
+                                           value="{% widthratio data.sem1_lrd|default:0 1 1 %}" 
+                                           step="0.01" style="width: 100px; text-align: center;" readonly class="yearly-field-lrd"
+                                           id="yearly_lrd_{{ class.id }}_{{ student_type }}_{{ category.id }}">
+                                  </td>
+                                <td style="background: #e8f5e9; border: 1px solid #ddd;">
+                                    <input type="number" name="fee_{{ class.id }}_{{ student_type }}_{{ category.id }}_yearly_USD" 
+                                           value="{% widthratio data.sem1_usd|default:0 1 1 %}" 
+                                           step="0.01" style="width: 100px; text-align: center;" readonly class="yearly-field-usd"
+                                           id="yearly_usd_{{ class.id }}_{{ student_type }}_{{ category.id }}">
+                                  </td>
+                                <td style="background: #e8f5e9; text-align: center; border: 1px solid #ddd;">
+                                    <small>Auto</small>
+                                  </td>
+                                <!-- Semester 1 Amount -->
+                                <td style="background: #e3f2fd; border: 1px solid #ddd;">
+                                    <input type="number" name="fee_{{ class.id }}_{{ student_type }}_{{ category.id }}_sem1_LRD" 
+                                           value="{{ data.sem1_lrd|default:0 }}" step="0.01" style="width: 100px; text-align: center;" 
+                                           class="sem1-field-lrd" data-class="{{ class.id }}" data-type="{{ student_type }}" data-cat="{{ category.id }}">
+                                  </td>
+                                <td style="background: #e3f2fd; border: 1px solid #ddd;">
+                                    <input type="number" name="fee_{{ class.id }}_{{ student_type }}_{{ category.id }}_sem1_USD" 
+                                           value="{{ data.sem1_usd|default:0 }}" step="0.01" style="width: 100px; text-align: center;"
+                                           class="sem1-field-usd" data-class="{{ class.id }}" data-type="{{ student_type }}" data-cat="{{ category.id }}">
+                                  </td>
+                                <td style="background: #e3f2fd; text-align: center; border: 1px solid #ddd;">
+                                    <small>Set</small>
+                                  </td>
+                                <!-- Semester 2 Amount -->
+                                <td style="background: #fff3e0; border: 1px solid #ddd;">
+                                    <input type="number" name="fee_{{ class.id }}_{{ student_type }}_{{ category.id }}_sem2_LRD" 
+                                           value="{{ data.sem2_lrd|default:0 }}" step="0.01" style="width: 100px; text-align: center;"
+                                           class="sem2-field-lrd" data-class="{{ class.id }}" data-type="{{ student_type }}" data-cat="{{ category.id }}">
+                                  </td>
+                                <td style="background: #fff3e0; border: 1px solid #ddd;">
+                                    <input type="number" name="fee_{{ class.id }}_{{ student_type }}_{{ category.id }}_sem2_USD" 
+                                           value="{{ data.sem2_usd|default:0 }}" step="0.01" style="width: 100px; text-align: center;"
+                                           class="sem2-field-usd" data-class="{{ class.id }}" data-type="{{ student_type }}" data-cat="{{ category.id }}">
+                                  </td>
+                                {% endwith %}
+                              </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+              </table>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <button type="submit" class="btn btn-primary" style="padding: 12px 30px; font-size: 16px;">💾 Save All Fees</button>
+            <a href="{% url 'fee_settings' %}" class="btn" style="padding: 12px 30px; font-size: 16px;">← Back to Settings</a>
+        </div>
+    </form>
+    
+    <div class="info-box" style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #1e3c72;">
+        <strong style="color: #1e3c72;">📌 Important Notes:</strong>
+        <ul style="margin-top: 10px;">
+            <li><strong style="color: #2e7d32;">🟢 Green columns (Yearly)</strong> = Auto-calculated from Semester 1 + Semester 2</li>
+            <li><strong style="color: #1565c0;">🔵 Blue columns (1st Semester)</strong> = Enter amounts for first semester only</li>
+            <li><strong style="color: #e65100;">🟠 Orange columns (2nd Semester)</strong> = Enter amounts for second semester only</li>
+            <li>Set amounts in <strong>LRD</strong> or <strong>USD</strong> - whichever your school uses</li>
+            <li>Example: If Registration is only in 1st semester, leave 2nd semester as 0</li>
+            <li>When recording payment, accountant selects: Yearly, 1st Semester, or 2nd Semester</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.fee-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 13px;
+    margin-top: 20px;
+}
+.fee-table th, .fee-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+.fee-table th {
+    font-weight: bold;
+    font-size: 14px;
+}
+input {
+    text-align: center;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+input:focus {
+    outline: none;
+    border-color: #1e3c72;
+    box-shadow: 0 0 5px rgba(30,60,114,0.3);
+}
+input[readonly] {
+    background: #f0f0f0;
+    cursor: not-allowed;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    margin: 2px;
+}
+.btn-primary {
+    background: #1e3c72;
+}
+.btn-primary:hover {
+    background: #2a5298;
+}
+.btn-success {
+    background: #28a745;
+}
+.btn-info {
+    background: #17a2b8;
+}
+</style>
+
+<script>
+// Update yearly calculation for all inputs
+function updateYearlyForRow(sem1_lrd_input, sem1_usd_input, sem2_lrd_input, sem2_usd_input) {
+    const sem1_lrd = parseFloat(sem1_lrd_input?.value || 0);
+    const sem1_usd = parseFloat(sem1_usd_input?.value || 0);
+    const sem2_lrd = parseFloat(sem2_lrd_input?.value || 0);
+    const sem2_usd = parseFloat(sem2_usd_input?.value || 0);
+    
+    const yearly_lrd = sem1_lrd + sem2_lrd;
+    const yearly_usd = sem1_usd + sem2_usd;
+    
+    // Find the yearly inputs in the same row
+    const row = sem1_lrd_input.closest('tr');
+    const yearly_lrd_input = row.querySelector('.yearly-field-lrd');
+    const yearly_usd_input = row.querySelector('.yearly-field-usd');
+    
+    if (yearly_lrd_input) yearly_lrd_input.value = yearly_lrd.toFixed(2);
+    if (yearly_usd_input) yearly_usd_input.value = yearly_usd.toFixed(2);
+}
+
+// Add event listeners to all semester inputs
+document.querySelectorAll('.sem1-field-lrd').forEach(input => {
+    const row = input.closest('tr');
+    const sem1_usd = row.querySelector('.sem1-field-usd');
+    const sem2_lrd = row.querySelector('.sem2-field-lrd');
+    const sem2_usd = row.querySelector('.sem2-field-usd');
+    
+    input.addEventListener('input', () => updateYearlyForRow(input, sem1_usd, sem2_lrd, sem2_usd));
+    if (sem1_usd) sem1_usd.addEventListener('input', () => updateYearlyForRow(input, sem1_usd, sem2_lrd, sem2_usd));
+    if (sem2_lrd) sem2_lrd.addEventListener('input', () => updateYearlyForRow(input, sem1_usd, sem2_lrd, sem2_usd));
+    if (sem2_usd) sem2_usd.addEventListener('input', () => updateYearlyForRow(input, sem1_usd, sem2_lrd, sem2_usd));
+});
+</script>
+{% endblock %}
+

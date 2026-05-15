@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #{{ receipt.receipt_number }}</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 0; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        
+        .receipt {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .school-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .receipt-title {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        
+        .receipt-number {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .info-row {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dotted #ccc;
+            padding: 5px 0;
+        }
+        
+        .amount {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f0f0f0;
+        }
+        
+        .balance {
+            margin: 20px 0;
+            padding: 10px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            text-align: center;
+        }
+        
+        .balance .remaining {
+            font-size: 18px;
+            font-weight: bold;
+            color: #856404;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            border-top: 1px dashed #000;
+            padding-top: 10px;
+        }
+        
+        .signature {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        button {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        button:hover {
+            background: #2a5298;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()">??? Print Receipt</button>
+        <button onclick="window.location.href='/dashboard/'">?? Back to Dashboard</button>
+    </div>
+    
+    <div class="receipt">
+        <div class="header">
+            <div class="school-name">SFMS SCHOOL</div>
+            <div class="receipt-title">OFFICIAL RECEIPT</div>
+            <div class="receipt-number">Receipt #: {{ receipt.receipt_number }}</div>
+            <div>Date: {{ receipt.payment_date|date:"F d, Y" }}</div>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Student Name:</strong></span>
+            <span>{{ receipt.student.full_name }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Admission #:</strong></span>
+            <span>{{ receipt.student.admission_number }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Class:</strong></span>
+            <span>{{ receipt.student.get_get_class_name|default:"Not assigned" }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Payment Method:</strong></span>
+            <span>{{ receipt.get_payment_method_display }}</span>
+        </div>
+        
+        {% if receipt.mobile_transaction_id %}
+        <div class="info-row">
+            <span><strong>Transaction ID:</strong></span>
+            <span>{{ receipt.mobile_transaction_id }}</span>
+        </div>
+        {% endif %}
+        
+        <div class="amount">
+            Amount Paid:
+            {% if receipt.amount_lrd > 0 %}
+                {{ receipt.amount_lrd|floatformat:2 }} LRD
+            {% endif %}
+            {% if receipt.amount_lrd > 0 and receipt.amount_usd > 0 %}
+                +
+            {% endif %}
+            {% if receipt.amount_usd > 0 %}
+                {{ receipt.amount_usd|floatformat:2 }} USD
+            {% endif %}
+        </div>
+        
+        {% if remaining_balance_lrd > 0 or remaining_balance_usd > 0 %}
+        <div class="balance">
+            <strong>Remaining Balance:</strong><br>
+            <span class="remaining">
+                {{ remaining_balance_lrd|floatformat:2 }} LRD
+                {% if remaining_balance_usd > 0 %} / {{ remaining_balance_usd|floatformat:2 }} USD{% endif %}
+            </span>
+            <br><small>Please pay this amount by the next due date</small>
+        </div>
+        {% else %}
+        <div class="balance" style="background: #d4edda; border-color: #28a745;">
+            <strong>? FULLY PAID</strong><br>
+            <span style="color: #155724;">No outstanding balance</span>
+        </div>
+        {% endif %}
+        
+        <div class="footer">
+            <p>This is a computer-generated receipt. No signature required.</p>
+            <p>Thank you for your payment!</p>
+        </div>
+        
+        <div class="signature">
+            <div>_____________________</div>
+            <div>_____________________</div>
+            <div>Cashier</div>
+            <div>Student/Parent</div>
+        </div>
+    </div>
+</body>
+</html>
+

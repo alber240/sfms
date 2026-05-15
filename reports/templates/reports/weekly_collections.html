@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Collections - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Weekly Fee Collection Report</h1>
+    
+    <form method="get" style="margin: 20px 0;">
+        <label>Week Starting:</label>
+        <input type="date" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
+        <button type="submit" class="btn btn-primary">View Report</button>
+    </form>
+    
+    <div style="background: white; padding: 20px; border-radius: 10px;">
+        <h2>{{ week_start|date:"F j, Y" }} - {{ week_end|date:"F j, Y" }}</h2>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Class</th>
+                    <th>Number of Payments</th>
+                    <th>Total LRD</th>
+                    <th>Total USD</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class_name, data in collections_by_class.items %}
+                <tr>
+                    <td>{{ class_name }}</td>
+                    <td>{{ data.count }}</td>
+                    <td>{{ data.lrd|floatformat:2 }}</td>
+                    <td>{{ data.usd|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No collections this week</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>Total</th>
+                    <th></th>
+                    <th>{{ total_lrd|floatformat:2 }} LRD</th>
+                    <th>{{ total_usd|floatformat:2 }} USD</th>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div class="no-print" style="margin-top: 20px;">
+            <button onclick="window.print()" class="btn btn-primary">??? Print Report</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

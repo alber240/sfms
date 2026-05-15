@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Daily Cash Report - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Daily Cash Position Report</h1>
+    
+    <form method="get" style="margin: 20px 0;">
+        <label>Select Date:</label>
+        <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}">
+        <button type="submit" class="btn btn-primary">View Report</button>
+    </form>
+    
+    <div class="report" style="background: white; padding: 20px; border-radius: 10px;">
+        <h2>{{ report_date|date:"l, F j, Y" }}</h2>
+        
+        <div style="margin: 20px 0;">
+            <h3>?? Collections</h3>
+            <p><strong>LRD:</strong> {{ total_collected_lrd|floatformat:2 }}</p>
+            <p><strong>USD:</strong> {{ total_collected_usd|floatformat:2 }}</p>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>?? Expenses</h3>
+            <p><strong>LRD:</strong> {{ total_expenses_lrd|floatformat:2 }}</p>
+            <p><strong>USD:</strong> {{ total_expenses_usd|floatformat:2 }}</p>
+        </div>
+        
+        <div style="margin: 20px 0; padding: 15px; background: #e8f5e9; border-radius: 5px;">
+            <h3>Closing Balance (LRD Equivalent)</h3>
+            <p style="font-size: 24px; font-weight: bold;">{{ closing_balance|floatformat:2 }} LRD</p>
+        </div>
+        
+        <div class="no-print" style="margin-top: 20px;">
+            <button onclick="window.print()" class="btn btn-primary">??? Print Report</button>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print { display: none; }
+    form { display: none; }
+}
+</style>
+{% endblock %}

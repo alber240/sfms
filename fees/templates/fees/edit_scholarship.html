@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Scholarship - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>?? Edit Scholarship</h1>
+    
+    <form method="post" class="form" style="max-width: 700px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Scholarship Name *</label>
+            <input type="text" name="name" value="{{ scholarship.name }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Category *</label>
+            <select name="category" required>
+                <option value="ACADEMIC" {% if scholarship.category == 'ACADEMIC' %}selected{% endif %}>Academic Excellence</option>
+                <option value="SPORTS" {% if scholarship.category == 'SPORTS' %}selected{% endif %}>Sports</option>
+                <option value="NEED_BASED" {% if scholarship.category == 'NEED_BASED' %}selected{% endif %}>Need Based</option>
+                <option value="MERIT" {% if scholarship.category == 'MERIT' %}selected{% endif %}>Merit</option>
+                <option value="SPECIAL" {% if scholarship.category == 'SPECIAL' %}selected{% endif %}>Special</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_percentage" {% if scholarship.is_percentage %}checked{% endif %}> Percentage Discount
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label>Discount Value</label>
+            <input type="number" name="discount_value" step="0.01" value="{{ scholarship.discount_value }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Applies to Which Semester?</label>
+            <select name="applies_to_semester">
+                <option value="YEARLY" {% if scholarship.applies_to_semester == 'YEARLY' %}selected{% endif %}>Yearly (Both Semesters)</option>
+                <option value="SEMESTER_1" {% if scholarship.applies_to_semester == 'SEMESTER_1' %}selected{% endif %}>1st Semester Only</option>
+                <option value="SEMESTER_2" {% if scholarship.applies_to_semester == 'SEMESTER_2' %}selected{% endif %}>2nd Semester Only</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Applies to Which Fee Categories?</label>
+            <select name="applies_to_categories" multiple size="6">
+                <option value="">-- Apply to ALL Categories --</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if cat.id in selected_categories %}selected{% endif %}>{{ cat.name }} ({{ cat.code }})</option>
+                {% endfor %}
+            </select>
+            <small>Hold Ctrl to select multiple. Leave empty to apply to ALL fee categories.</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Max Students (0 = unlimited)</label>
+            <input type="number" name="max_students" value="{{ scholarship.max_students }}">
+        </div>
+        
+        <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" rows="3">{{ scholarship.description }}</textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Scholarship</button>
+            <a href="{% url 'scholarship_management' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

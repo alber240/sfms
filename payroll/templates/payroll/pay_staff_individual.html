@@ -1,0 +1,55 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Pay Staff - {{ staff.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <h2>💰 Pay Staff: {{ staff.name }}</h2>
+        <p><strong>Position:</strong> {{ staff.position }}</p>
+        <p><strong>Monthly Salary:</strong> {{ staff.monthly_salary_lrd }} LRD / {{ staff.monthly_salary_usd }} USD</p>
+        
+        <div class="warning-box" style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <strong>⚠️ Note:</strong> You can process payroll for past, current, or future months.
+            <br>A warning will appear for non-current months - just verify and proceed.
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Month *</label>
+                    <select name="month" required class="form-control">
+                        {% for month_value, month_name in months %}
+                        <option value="{{ month_value }}" {% if month_value == current_month %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Year *</label>
+                    <input type="number" name="year" value="{{ current_year }}" required min="2020" max="2030">
+                </div>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px;">
+                    ✅ Process Payment for {{ staff.name }}
+                </button>
+                <a href="{% url 'staff_list' %}" class="btn" style="width: 100%; margin-top: 10px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.btn-success { background: #28a745; color: white; border: none; cursor: pointer; padding: 12px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; text-align: center; }
+</style>
+{% endblock %}

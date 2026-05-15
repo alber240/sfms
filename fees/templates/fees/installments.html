@@ -1,0 +1,152 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Installment Plans - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>📅 Installment Plans</h1>
+    <p>Set payment schedules for each class and semester</p>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="/fees/fee-matrix/" class="btn">← Back to Fee Matrix</a>
+    </div>
+    
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
+        <h3>Add Installment Plan</h3>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Class</label>
+                    <select name="class_assigned" required>
+                        <option value="">Select Class</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}">{{ class.name }}{% if class.section %} - {{ class.section }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Academic Year</label>
+                    <input type="text" name="academic_year" value="2024" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Semester</label>
+                    <select name="semester" required>
+                        <option value="FIRST">1st Semester</option>
+                        <option value="SECOND">2nd Semester</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Installment Number</label>
+                    <input type="number" name="installment_number" required placeholder="e.g., 1, 2, 3">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" name="due_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Percentage of Semester Fees (%)</label>
+                    <input type="number" name="percentage" step="0.01" required placeholder="e.g., 25 for 25%">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="e.g., First payment, Mid-semester payment">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Add Installment Plan</button>
+        </form>
+    </div>
+    
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-top: 20px;">
+        <h3>Existing Installment Plans</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Class</th>
+                    <th>Year</th>
+                    <th>Semester</th>
+                    <th>#</th>
+                    <th>Due Date</th>
+                    <th>%</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plan in installment_plans %}
+                <tr>
+                    <td>{{ plan.class_assigned.name }}{% if plan.class_assigned.section %} - {{ plan.class_assigned.section }}{% endif %}</td>
+                    <td>{{ plan.academic_year }}</td>
+                    <td>{% if plan.semester == 'FIRST' %}1st Semester{% else %}2nd Semester{% endif %}</td>
+                    <td>{{ plan.installment_number }}</td>
+                    <td>{{ plan.due_date|date:"Y-m-d" }}</td>
+                    <td>{{ plan.percentage }}%</td>
+                    <td>{{ plan.description|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align: center;">No installment plans configured yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-group select, .form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+.btn-primary {
+    background: #1e3c72;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.table th, .table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.table th {
+    background: #f5f5f5;
+}
+</style>
+{% endblock %}

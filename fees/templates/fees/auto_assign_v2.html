@@ -1,0 +1,67 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Auto-Assign Fees - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 50px auto; text-align: center; padding: 40px;">
+        <h1>⚡ Auto-Assign Fees</h1>
+        <p>This will calculate and assign fees to all students based on:</p>
+        <ul style="text-align: left; margin: 20px;">
+            <li>Student's class and student type (New/Returning)</li>
+            <li>Fee structures configured for {{ academic_year }}</li>
+            <li>Semester 1 and Semester 2 amounts</li>
+        </ul>
+        
+        <div class="info-box" style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>📌 Important:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>This will create or update fee ledgers for all active students</li>
+                <li>Existing payment records will NOT be changed</li>
+                <li>Only the total due amounts will be updated</li>
+                <li>Run this after setting up or changing fee structures</li>
+            </ul>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="academic_year" value="{{ academic_year }}">
+            <button type="submit" class="btn btn-primary" style="padding: 15px 30px; font-size: 18px;">
+                🚀 Run Auto-Assignment for {{ academic_year }}
+            </button>
+            <a href="/fees/fee-matrix/?academic_year={{ academic_year }}" class="btn" style="padding: 15px 30px;">← Back to Fee Matrix</a>
+        </form>
+    </div>
+</div>
+
+<style>
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    margin: 10px;
+}
+.btn-primary {
+    background: #28a745;
+}
+.btn-primary:hover {
+    background: #218838;
+}
+ul {
+    margin-left: 20px;
+}
+li {
+    margin: 5px 0;
+}
+</style>
+{% endblock %}

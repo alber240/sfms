@@ -1,0 +1,101 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Process Payroll - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 700px; margin: 0 auto;">
+        <h2>💰 Process Monthly Payroll</h2>
+        
+        <div class="info-box" style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <strong>📌 Current Period:</strong> {{ current_month }}/{{ current_year }}
+        </div>
+        
+        <div class="warning-box" style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+            <strong>⚠️ Important Notes:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>You can process <strong>past, current, or future months</strong> (for advance payments)</li>
+                <li>A warning message will appear for non-current months - just verify and proceed</li>
+                <li>Choose <strong>Bulk Payment</strong> to pay all staff at once</li>
+                <li>Choose <strong>Individual Payment</strong> to pay specific staff members</li>
+                <li>Salary advances will be automatically deducted</li>
+            </ul>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Payment Type *</label>
+                <select name="payment_type" id="paymentType" required class="form-control" onchange="toggleStaffSelection()">
+                    <option value="bulk">Bulk Payment - Pay All Staff</option>
+                    <option value="individual">Individual Payment - Select Specific Staff</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="staffSelection" style="display: none;">
+                <label>Select Staff to Pay *</label>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; padding: 10px;">
+                    {% for staff in staff_members %}
+                    <div style="margin: 5px 0;">
+                        <input type="checkbox" name="staff_ids" value="{{ staff.id }}" id="staff_{{ staff.id }}">
+                        <label for="staff_{{ staff.id }}">{{ staff.name }} - {{ staff.position }} ({{ staff.monthly_salary_lrd }} LRD)</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <small>Select one or more staff members to process payroll for</small>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Month *</label>
+                    <select name="month" required class="form-control">
+                        {% for month_value, month_name in months %}
+                        <option value="{{ month_value }}" {% if month_value == current_month %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Year *</label>
+                    <input type="number" name="year" value="{{ current_year }}" required min="2020" max="2030">
+                </div>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px;" 
+                        onclick="return confirm('Please verify the month and staff selection. Process payroll now?')">
+                    ✅ Process Payroll
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.btn-success { background: #28a745; color: white; border: none; cursor: pointer; padding: 12px; }
+.warning-box ul { margin-bottom: 0; }
+#staffSelection { margin-top: 15px; }
+</style>
+
+<script>
+    function toggleStaffSelection() {
+        var paymentType = document.getElementById('paymentType').value;
+        var staffDiv = document.getElementById('staffSelection');
+        if (paymentType === 'individual') {
+            staffDiv.style.display = 'block';
+        } else {
+            staffDiv.style.display = 'none';
+        }
+    }
+    
+    // Check on page load
+    toggleStaffSelection();
+</script>
+{% endblock %}

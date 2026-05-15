@@ -1,0 +1,151 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Exchange Rate - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>💱 Daily Exchange Rate</h1>
+    <p>Set the daily LRD to USD exchange rate for accurate combined totals</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <!-- Set Exchange Rate Card -->
+        <div class="card">
+            <h3>📅 Set Today's Rate</h3>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" name="rate_date" value="{{ today|date:'Y-m-d' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Exchange Rate</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="number" name="lrd_to_usd" step="0.01" 
+                               value="{{ current_rate.lrd_to_usd|default:'200.00' }}" 
+                               required style="flex: 1; font-size: 24px; text-align: center;">
+                        <span style="font-size: 18px;">LRD = 1 USD</span>
+                    </div>
+                    <small>Example: If 1 USD = 200 LRD, enter 200</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes (Optional)</label>
+                    <input type="text" name="notes" placeholder="e.g., Bank rate, parallel market rate">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save Exchange Rate</button>
+            </form>
+            
+            {% if current_rate %}
+            <div class="info-box" style="margin-top: 20px; background: #e8f5e9; padding: 15px; border-radius: 5px;">
+                <strong>✅ Today's Rate:</strong> 1 USD = {{ current_rate.lrd_to_usd }} LRD
+                <br>
+                <small>Set on {{ current_rate.rate_date|date:"F d, Y" }}</small>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Recent Rates Card -->
+        <div class="card">
+            <h3>📊 Recent Exchange Rates</h3>
+            
+            {% if recent_rates %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Rate (1 USD)</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rate in recent_rates %}
+                    <tr>
+                        <td>{{ rate.rate_date|date:"Y-m-d" }}</td>
+                        <td><strong>{{ rate.lrd_to_usd }}</strong> LRD</td>
+                        <td>{{ rate.notes|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: #999; text-align: center; padding: 40px;">
+                No exchange rates set yet. Set today's rate above.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="info-box" style="margin-top: 20px; background: #e3f2fd; padding: 15px; border-radius: 5px;">
+        <strong>💡 How it works:</strong>
+        <ul style="margin-top: 10px; margin-left: 20px;">
+            <li>The exchange rate is used to calculate combined totals on the dashboard</li>
+            <li>LRD + (USD × exchange rate) = Combined total in LRD equivalent</li>
+            <li>Set the rate daily for accurate financial reporting</li>
+            <li>If no rate is set for today, the most recent rate will be used</li>
+        </ul>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
+    </div>
+</div>
+
+<style>
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+.btn-primary {
+    background: #1e3c72;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.table th {
+    background: #f5f5f5;
+}
+ul {
+    margin-left: 20px;
+}
+li {
+    margin: 5px 0;
+}
+</style>
+{% endblock %}

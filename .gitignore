@@ -1,0 +1,56 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+
+# Database
+*.sqlite3
+*.db
+
+# Backup files
+*.bak
+backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Media files (receipt photos)
+media/expenses/
+media/student_photos/
+media/mobile_proofs/
+
+# Logs
+logs/
+*.log
+
+# Migration files (optional - keep these for deployment)
+# !*/migrations/__init__.py
+# */migrations/00*.py

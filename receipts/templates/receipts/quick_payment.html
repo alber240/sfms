@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Quick Payment - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>?? Quick Payment</h1>
+    
+    <div class="search-box">
+        <h3>Find Student</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="search" placeholder="Search by name, admission number, or parent phone..." 
+                   value="{{ search }}" style="width: 70%; padding: 10px;">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        
+        {% if students %}
+        <div style="margin-top: 20px;">
+            <h4>Select Student:</h4>
+            {% for s in students %}
+            <div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>{{ s.full_name }}</strong><br>
+                    <small>Admission: {{ s.admission_number }} | Class: {{ s.get_get_class_name|default:"Not assigned" }} | Phone: {{ s.parent_phone|default:"-" }}</small>
+                </div>
+                <a href="{% url 'payment_entry' s.id %}" class="btn-small">Select & Pay</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% elif search %}
+        <p style="margin-top: 20px;">No students found matching "{{ search }}"</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

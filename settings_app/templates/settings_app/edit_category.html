@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Category - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>?? Edit Expense Category</h1>
+    
+    <form method="post" class="form" style="max-width: 500px; margin-top: 20px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label>Category Name</label>
+            <input type="text" name="name" value="{{ category.name }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Category Code</label>
+            <input type="text" name="code" value="{{ category.code }}" required maxlength="10">
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Category</button>
+            <a href="{% url 'settings_dashboard' %}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

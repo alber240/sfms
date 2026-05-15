@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Fee Structure - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Add Fee Structure</h1>
+    
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; max-width: 600px;">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Class</label>
+                <select name="class_assigned" required class="form-control">
+                    <option value="">Select Class</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}">{{ class.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Term</label>
+                <select name="term" required class="form-control">
+                    <option value="Term 1">Term 1</option>
+                    <option value="Term 2">Term 2</option>
+                    <option value="Term 3">Term 3</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" name="academic_year" value="2024" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Fee Category</label>
+                <select name="category" required class="form-control">
+                    <option value="">Select Category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Amount (LRD)</label>
+                <input type="number" name="amount_lrd" step="0.01" value="0">
+            </div>
+            
+            <div class="form-group">
+                <label>Amount (USD)</label>
+                <input type="number" name="amount_usd" step="0.01" value="0">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Fee Structure</button>
+                <a href="/fees/settings/" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-control, input, select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.btn-primary {
+    background: #1e3c72;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+</style>
+{% endblock %}

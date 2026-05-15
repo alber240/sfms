@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Receipt - {{ staff.name }}</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 0; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        
+        .receipt {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .school-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .receipt-title {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        
+        .receipt-number {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .info-row {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dotted #ccc;
+            padding: 5px 0;
+        }
+        
+        .amount {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: #f0f0f0;
+        }
+        
+        .deduction {
+            margin: 15px 0;
+            padding: 10px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            border-top: 1px dashed #000;
+            padding-top: 10px;
+        }
+        
+        .signature {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        button {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        button:hover {
+            background: #2a5298;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()">🖨️ Print Receipt</button>
+        <button onclick="window.location.href='/payroll/'">🏠 Back to Staff</button>
+    </div>
+    
+    <div class="receipt">
+        <div class="header">
+            <div class="school-name">SFMS SCHOOL</div>
+            <div class="receipt-title">PAYROLL PAYMENT RECEIPT</div>
+            <div class="receipt-number">Receipt #: {{ receipt.receipt_number }}</div>
+            <div>Date: {{ receipt.printed_at|date:"F d, Y H:i" }}</div>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Staff Name:</strong></span>
+            <span>{{ staff.name }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Staff ID:</strong></span>
+            <span>{{ staff.staff_id }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Position:</strong></span>
+            <span>{{ staff.position }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Payment Period:</strong></span>
+            <span>{{ payroll_period.get_month_display }} {{ payroll_period.year }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Payment Date:</strong></span>
+            <span>{{ receipt.printed_at|date:"Y-m-d" }}</span>
+        </div>
+        
+        <div class="info-row">
+            <span><strong>Base Salary:</strong></span>
+            <span>
+                {% if entry.base_salary_lrd > 0 %}{{ entry.base_salary_lrd|floatformat:2 }} LRD{% endif %}
+                {% if entry.base_salary_usd > 0 %}{{ entry.base_salary_usd|floatformat:2 }} USD{% endif %}
+            </span>
+        </div>
+        
+        {% if entry.deduction_lrd > 0 or entry.deduction_usd > 0 %}
+        <div class="deduction">
+            <strong>📌 Deductions:</strong>
+            <div class="info-row">
+                <span>Amount Deducted:</span>
+                <span>
+                    {% if entry.deduction_lrd > 0 %}{{ entry.deduction_lrd|floatformat:2 }} LRD{% endif %}
+                    {% if entry.deduction_usd > 0 %}{{ entry.deduction_usd|floatformat:2 }} USD{% endif %}
+                </span>
+            </div>
+            {% if entry.deduction_reason %}
+            <div class="info-row">
+                <span>Reason:</span>
+                <span>{{ entry.deduction_reason }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="amount">
+            <strong>Net Pay Amount:</strong><br>
+            {% if entry.net_pay_lrd > 0 %}{{ entry.net_pay_lrd|floatformat:2 }} LRD{% endif %}
+            {% if entry.net_pay_usd > 0 %}{{ entry.net_pay_usd|floatformat:2 }} USD{% endif %}
+        </div>
+        
+        <div class="footer">
+            <p>This is a computer-generated payroll receipt.</p>
+            <p>Amount paid in full for {{ payroll_period.get_month_display }} {{ payroll_period.year }}</p>
+        </div>
+        
+        <div class="signature">
+            <div>_____________________</div>
+            <div>_____________________</div>
+            <div>Accountant Signature</div>
+            <div>Staff Signature</div>
+        </div>
+    </div>
+</body>
+</html>

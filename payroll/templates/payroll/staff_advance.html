@@ -1,0 +1,106 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Staff Deduction - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>💰 Staff Deduction for {{ staff.name }}</h2>
+        <p>Monthly Salary: {{ staff.monthly_salary_lrd }} LRD / {{ staff.monthly_salary_usd }} USD</p>
+        
+        <div class="info-box" style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <strong>📌 Note:</strong> Deductions apply to ONE specific month only. 
+            You will need to create a new deduction for each month if needed.
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Deduction Type *</label>
+                <select name="deduction_type" required class="form-control">
+                    <option value="ADVANCE">Salary Advance</option>
+                    <option value="LOAN">Loan Deduction</option>
+                    <option value="COOPERATIVE">Cooperative Contribution</option>
+                    <option value="PENALTY">Penalty</option>
+                    <option value="ABSENCE">Absence Deduction</option>
+                    <option value="OTHER">Other Deduction</option>
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Month *</label>
+                    <select name="month" required class="form-control">
+                        {% for month_value, month_name in months %}
+                        <option value="{{ month_value }}" {% if month_value == current_month %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>Select which month this deduction applies to</small>
+                </div>
+                <div class="form-group">
+                    <label>Year *</label>
+                    <input type="number" name="year" value="{{ current_year }}" required min="2020" max="2030">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Amount (LRD)</label>
+                    <input type="number" name="amount_lrd" step="0.01" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Amount (USD)</label>
+                    <input type="number" name="amount_usd" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Reason / Notes</label>
+                <textarea name="reason" rows="3" placeholder="Explain the reason for this deduction (e.g., Absent for 3 days, Salary advance for school fees)"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Deduction</button>
+                <a href="{% url 'staff_list' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+        
+        <div class="history-box" style="margin-top: 30px;">
+            <h4>Recent Deductions for {{ staff.name }}</h4>
+            <table class="table">
+                <thead>
+                    <tr><th>Month/Year</th><th>Type</th><th>Amount</th><th>Reason</th><th>Status</th></thead>
+                <tbody>
+                    {% for advance in staff.advances.all|slice:":5" %}
+                    <tr>
+                        <td>{{ advance.get_month_display }} {{ advance.year }}</a>
+                        <td>{{ advance.get_deduction_type_display }}</a>
+                        <td>{{ advance.amount_lrd }} LRD</a>
+                        <td>{{ advance.reason|truncatechars:30 }}</a>
+                        <td>{% if advance.is_applied %}Applied{% else %}Pending{% endif %}</a>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">No deductions recorded</a></td>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+.table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.table th, .table td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+.table th { background: #f5f5f5; }
+</style>
+{% endblock %}

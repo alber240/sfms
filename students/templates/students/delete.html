@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Student - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="delete-confirm">
+        <h1>Confirm Delete</h1>
+        <p>Are you sure you want to delete <strong>{{ student.full_name }}</strong>?</p>
+        <p style="color: red;">This action cannot be undone.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <a href="{% url 'student_list' %}" class="btn">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

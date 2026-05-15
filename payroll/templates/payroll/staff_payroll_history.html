@@ -1,0 +1,177 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Payroll History - {{ staff.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>📜 Payroll History: {{ staff.name }}</h1>
+        <div>
+            <a href="{% url 'staff_edit' staff.id %}" class="btn btn-primary">✏️ Edit</a>
+            <a href="{% url 'pay_staff_individual' staff.id %}" class="btn btn-success">💰 Pay Now</a>
+            <a href="{% url 'staff_list' %}" class="btn">← Back</a>
+        </div>
+    </div>
+    
+    <!-- Staff Summary Card -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div>
+                <strong>Staff ID:</strong> {{ staff.staff_id }}<br>
+                <strong>Position:</strong> {{ staff.position }}
+            </div>
+            <div>
+                <strong>Monthly Salary:</strong><br>
+                {% if staff.monthly_salary_lrd > 0 %}{{ staff.monthly_salary_lrd }} LRD{% endif %}
+                {% if staff.monthly_salary_usd > 0 %}{{ staff.monthly_salary_usd }} USD{% endif %}
+            </div>
+            <div>
+                <strong>Phone:</strong> {{ staff.phone|default:"-" }}<br>
+                <strong>Hire Date:</strong> {{ staff.hire_date|date:"Y-m-d" }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payroll History Table -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
+        <h3>Payment History</h3>
+        
+        {% if payroll_entries %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Base Salary</th>
+                    <th>Deductions</th>
+                    <th>Net Pay</th>
+                    <th>Processed Date</th>
+                    <th>Receipt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in payroll_entries %}
+                <tr>
+                    <td>
+                        <strong>{{ entry.payroll_period.get_month_display }} {{ entry.payroll_period.year }}</strong>
+                      </a></td>
+                    <td>
+                        {% if entry.base_salary_lrd > 0 %}{{ entry.base_salary_lrd|floatformat:2 }} LRD{% endif %}
+                        {% if entry.base_salary_usd > 0 %}{{ entry.base_salary_usd|floatformat:2 }} USD{% endif %}
+                      </a></td>
+                    <td>
+                        {% if entry.deduction_lrd > 0 or entry.deduction_usd > 0 %}
+                            {% if entry.deduction_lrd > 0 %}{{ entry.deduction_lrd|floatformat:2 }} LRD{% endif %}
+                            {% if entry.deduction_reason %}
+                                <br><small style="color: #666;">({{ entry.deduction_reason|truncatechars:40 }})</small>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: #999;">None</span>
+                        {% endif %}
+                      </a></td>
+                    <td>
+                        <strong style="color: #28a745;">
+                            {% if entry.net_pay_lrd > 0 %}{{ entry.net_pay_lrd|floatformat:2 }} LRD{% endif %}
+                            {% if entry.net_pay_usd > 0 %}{{ entry.net_pay_usd|floatformat:2 }} USD{% endif %}
+                        </strong>
+                      </a></td>
+                    <td>{{ entry.payroll_period.processed_at|date:"Y-m-d H:i" }}</a></td>
+                    <td>
+                        {% if entry.receipt %}
+                            <a href="{% url 'payroll_receipt_print' entry.id %}" target="_blank" class="btn-small">🖨️ Print</a>
+                        {% else %}
+                            <span style="color: #999;">No receipt</span>
+                        {% endif %}
+                      </a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>TOTALS</strong></a></a></td>
+                    <td></a></a></td>
+                    <td><strong>{{ total_deductions_lrd|floatformat:2 }} LRD</strong></a></a></td>
+                    <td>
+                        <strong>
+                            {% if total_paid_lrd > 0 %}{{ total_paid_lrd|floatformat:2 }} LRD{% endif %}
+                            {% if total_paid_usd > 0 %}{{ total_paid_usd|floatformat:2 }} USD{% endif %}
+                        </strong>
+                      </a></a></td>
+                    <td></a></a></td>
+                    <td></a></a></td>
+                </tr>
+            </tfoot>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #999;">
+            <p>📭 No payroll history found for this staff member.</p>
+            <p>Click the <strong>"Pay Now"</strong> button to process their first payroll.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Summary Statistics -->
+    {% if payroll_entries %}
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-top: 20px;">
+        <h3>Summary Statistics</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold;">{{ payroll_entries|length }}</div>
+                <div>Total Payments</div>
+            </div>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold;">{{ total_paid_lrd|floatformat:0 }} LRD</div>
+                <div>Total Paid (LRD)</div>
+                {% if total_paid_usd > 0 %}<small>{{ total_paid_usd|floatformat:2 }} USD</small>{% endif %}
+            </div>
+            <div style="background: #fff3e0; padding: 15px; border-radius: 5px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold;">{{ total_deductions_lrd|floatformat:0 }} LRD</div>
+                <div>Total Deductions</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 0 3px;
+}
+.btn-primary { background: #1e3c72; }
+.btn-success { background: #28a745; }
+.btn-info { background: #17a2b8; }
+.btn-warning { background: #ffc107; color: #856404; }
+.btn-danger { background: #dc3545; }
+.btn-small {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    background: #1e3c72;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    margin: 0 2px;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+.table th {
+    background: #f5f5f5;
+}
+</style>
+{% endblock %}

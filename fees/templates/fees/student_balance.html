@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Balance - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ student.full_name }} - Fee Balance</h1>
+    
+    <div class="card" style="margin-bottom: 20px;">
+        <h3>Current Balance</h3>
+        {% for ledger in fee_ledgers %}
+            {% if not ledger.is_fully_paid %}
+                <p style="font-size: 32px; font-weight: bold; color: #c62828;">
+                    {{ ledger.balance_lrd|floatformat:2 }} LRD
+                </p>
+                <p>{{ ledger.balance_usd|floatformat:2 }} USD</p>
+                <p>Total Due: {{ ledger.total_amount_lrd|floatformat:2 }} LRD / {{ ledger.total_amount_usd|floatformat:2 }} USD</p>
+                <p>Paid: {{ ledger.amount_paid_lrd|floatformat:2 }} LRD / {{ ledger.amount_paid_usd|floatformat:2 }} USD</p>
+            {% endif %}
+        {% empty %}
+            <p>No fee records found for this student.</p>
+        {% endfor %}
+    </div>
+    
+    <div class="card">
+        <h3>Fee History by Term</h3>
+        <table class="table">
+            <thead>
+                <tr><th>Term</th><th>Year</th><th>Total Due</th><th>Paid</th><th>Balance</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for ledger in fee_ledgers %}
+                <tr>
+                    <td>{{ ledger.term }}</td>
+                    <td>{{ ledger.academic_year }}</td>
+                    <td>{{ ledger.total_amount_lrd|floatformat:2 }} LRD<br>{{ ledger.total_amount_usd|floatformat:2 }} USD</td>
+                    <td>{{ ledger.amount_paid_lrd|floatformat:2 }} LRD<br>{{ ledger.amount_paid_usd|floatformat:2 }} USD</td>
+                    <td>{{ ledger.balance_lrd|floatformat:2 }} LRD<br>{{ ledger.balance_usd|floatformat:2 }} USD</td>
+                    <td>
+                        {% if ledger.is_fully_paid %}
+                            <span style="color: green;">? Paid</span>
+                        {% else %}
+                            <span style="color: orange;">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'payment_entry' student.id %}" class="btn btn-primary">Record Payment</a>
+        <a href="{% url 'student_list' %}" class="btn">Back to Students</a>
+    </div>
+</div>
+{% endblock %}

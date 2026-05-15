@@ -1,0 +1,230 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Batch Payment - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>📝 Batch Payment Entry</h1>
+    <p>Record payments for multiple students at once</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <!-- Left Column: Search and Add Students -->
+        <div class="card">
+            <h3>🔍 Find Students</h3>
+            
+            <form method="post" style="margin-bottom: 20px;">
+                {% csrf_token %}
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="search" placeholder="Search by name, admission number, or phone..." 
+                           value="{{ search }}" style="flex: 1; padding: 10px;">
+                    <button type="submit" name="search_btn" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+            
+            {% if students %}
+            <form method="post">
+                {% csrf_token %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll"></th>
+                                <th>Admission</th>
+                                <th>Name</th>
+                                <th>Class</th>
+                                <th>Due</th>
+                            </thead>
+                        <tbody>
+                            {% for s in students %}
+                            <tr>
+                                <td><input type="checkbox" name="selected_students" value="{{ s.id }}" class="student-checkbox"></td>
+                                <td>{{ s.admission_number }}</td>
+                                <td>{{ s.full_name }}</td>
+                                <td>{{ s.get_class_name }}</td>
+                                <td>{{ s.balance|floatformat:0 }} LRD</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <button type="submit" name="add_to_batch" class="btn btn-success" style="margin-top: 15px;">
+                    ➕ Add Selected to Batch
+                </button>
+            </form>
+            {% elif search %}
+            <p>No students found matching "{{ search }}"</p>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column: Batch List -->
+        <div class="card">
+            <h3>📋 Batch List <span class="badge">{{ batch_students|length }} students</span></h3>
+            
+            {% if batch_students %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="payment_period" value="{{ payment_period }}">
+                <input type="hidden" name="academic_year" value="{{ academic_year }}">
+                
+                <div style="margin-bottom: 15px;">
+                    <label>Payment Period:</label>
+                    <select name="payment_period" class="payment-period-select">
+                        <option value="FIRST" {% if payment_period == 'FIRST' %}selected{% endif %}>1st Semester</option>
+                        <option value="SECOND" {% if payment_period == 'SECOND' %}selected{% endif %}>2nd Semester</option>
+                        <option value="YEARLY" {% if payment_period == 'YEARLY' %}selected{% endif %}>Yearly (Both Semesters)</option>
+                    </select>
+                    
+                    <label style="margin-left: 15px;">Payment Method:</label>
+                    <select name="payment_method">
+                        <option value="CASH">Cash</option>
+                        <option value="MOBILE_MONEY">Mobile Money</option>
+                    </select>
+                </div>
+                
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Admission</th>
+                                <th>Student Name</th>
+                                <th>Due Amount</th>
+                                <th>Amount (LRD)</th>
+                                <th>Amount (USD)</th>
+                                <th></th>
+                            </thead>
+                        <tbody>
+                            {% for s in batch_students %}
+                            <tr>
+                                <td>{{ s.admission_number }}</td>
+                                <td>{{ s.full_name }}</td>
+                                <td>{{ s.due|floatformat:0 }} LRD</td>
+                                <td>
+                                    <input type="number" name="amount_lrd_{{ s.id }}" step="0.01" 
+                                           value="0" style="width: 100px;" class="amount-input" 
+                                           data-due="{{ s.due }}" data-student="{{ s.id }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="amount_usd_{{ s.id }}" step="0.01" 
+                                           value="0" style="width: 100px;">
+                                </td>
+                                <td>
+                                    <button type="submit" name="remove_from_batch" value="{{ s.id }}" 
+                                            class="btn-small btn-danger" formnovalidate>Remove</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
+                    <strong>Total to Collect:</strong>
+                    <span id="totalAmount">0 LRD</span>
+                </div>
+                
+                <button type="submit" name="process_batch" class="btn btn-primary" style="margin-top: 15px; width: 100%;">
+                    💾 Process All Payments ({{ batch_students|length }} students)
+                </button>
+            </form>
+            {% else %}
+            <p style="color: #999; text-align: center; padding: 40px;">
+                No students in batch. Search and add students from the left panel.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="/dashboard/" class="btn">← Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.badge {
+    background: #1e3c72;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+.btn-primary {
+    background: #1e3c72;
+}
+.btn-success {
+    background: #28a745;
+}
+.btn-danger {
+    background: #dc3545;
+}
+.btn-small {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.table th {
+    background: #f5f5f5;
+}
+.amount-input {
+    width: 100px;
+    padding: 5px;
+    text-align: right;
+}
+</style>
+
+<script>
+// Select all checkbox
+document.getElementById('selectAll')?.addEventListener('change', function(e) {
+    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = e.target.checked);
+});
+
+// Calculate total amount
+function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('.amount-input').forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    document.getElementById('totalAmount').innerText = total.toFixed(2) + ' LRD';
+}
+
+// Add event listeners to amount inputs
+document.querySelectorAll('.amount-input').forEach(input => {
+    input.addEventListener('input', calculateTotal);
+});
+
+// Initial calculation
+calculateTotal();
+</script>
+{% endblock %}

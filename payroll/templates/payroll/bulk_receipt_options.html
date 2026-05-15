@@ -1,0 +1,48 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Payroll Receipt Options - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 50px auto; text-align: center; padding: 30px;">
+        <h2>✅ Payroll Processed Successfully!</h2>
+        <p style="font-size: 18px; margin: 20px 0;">
+            Processed <strong>{{ processed_count }}</strong> staff for 
+            {{ payroll_period.get_month_display }} {{ payroll_period.year }}
+        </p>
+        
+        <div class="info-box" style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>📌 How would you like to handle receipts?</strong>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px; margin: 20px 0;">
+            <a href="{% url 'payroll_bulk_receipts_print' payroll_period.id %}" class="btn btn-primary" style="padding: 15px;">
+                🖨️ Print Summary Sheet (All Staff on One Page)
+            </a>
+            <a href="{% url 'payroll_bulk_individual_receipts' payroll_period.id %}" class="btn btn-info" style="padding: 15px;">
+                📄 Print Individual Receipts for Each Staff
+            </a>
+            <a href="{% url 'payroll_history' %}" class="btn btn-secondary" style="padding: 15px;">
+                📋 Go to Payroll History (Print Later)
+            </a>
+        </div>
+        
+        <div class="warning-box" style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 20px; text-align: left;">
+            <strong>💡 Tip:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li><strong>Summary Sheet:</strong> Best for bank/cheque preparation - shows all staff payments on one page</li>
+                <li><strong>Individual Receipts:</strong> Best for giving each staff member their own receipt</li>
+                <li>You can always print receipts later from the Payroll History page</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.card { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.btn { display: inline-block; padding: 10px 20px; text-decoration: none; border-radius: 5px; color: white; }
+.btn-primary { background: #1e3c72; }
+.btn-info { background: #17a2b8; }
+.btn-secondary { background: #6c757d; }
+</style>
+{% endblock %}
