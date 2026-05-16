@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'expenses',
     'settings_app',
     'reports',
+    'inventory',
     'payroll',
 ]
 
@@ -46,6 +47,8 @@ TEMPLATES = [{
             'django.template.context_processors.request',
             'django.contrib.auth.context_processors.auth',
             'django.contrib.messages.context_processors.messages',
+            'core.context_processors.school_settings',
+            'core.context_processors.user_language',
         ],
     },
 }]
@@ -66,7 +69,17 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Africa/Monrovia'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('fr', 'Français'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
@@ -75,10 +88,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'
 
-
-
-
-
-
-
-
+# Email Settings - Real Gmail with App Password
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'bigchicha74@gmail.com'
+EMAIL_HOST_PASSWORD = 'ohmd uaba byof nitu'  # You need to generate this
+DEFAULT_FROM_EMAIL = 'bigchicha74@gmail.com'

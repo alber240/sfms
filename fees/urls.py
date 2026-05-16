@@ -25,4 +25,8 @@ urlpatterns = [
     path('edit-scholarship/<int:pk>/', views.edit_scholarship, name='edit_scholarship'),
     path('delete-scholarship/<int:pk>/', views.delete_scholarship, name='delete_scholarship'),
     path('assign-scholarship/<int:student_id>/', views.assign_scholarship, name='assign_scholarship'),
+    path('manage-categories/', views.manage_categories, name='manage_categories'),
+path('add-category/', views.add_category, name='add_fee_category'),
+path('edit-category/<int:pk>/', views.edit_category, name='edit_fee_category'),
+path('delete-category/<int:pk>/', views.delete_category, name='delete_fee_category'),
 ]

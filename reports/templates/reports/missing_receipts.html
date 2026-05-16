@@ -1,0 +1,94 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Missing Receipt Numbers - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>🔍 Missing Receipt Numbers Report</h1>
+    <p>This report helps detect skipped or hidden receipts (Requirement AU4)</p>
+    
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                <strong>First Receipt #:</strong><br>
+                {{ first_receipt }}
+            </div>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                <strong>Last Receipt #:</strong><br>
+                {{ last_receipt }}
+            </div>
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                <strong>Total Expected:</strong><br>
+                {{ expected_count }}
+            </div>
+            <div style="background: {% if missing_count > 0 %}#ffebee{% else %}#e8f5e9{% endif %}; padding: 15px; border-radius: 5px;">
+                <strong>Missing Numbers:</strong><br>
+                <span style="font-size: 24px; font-weight: bold; color: {% if missing_count > 0 %}#c62828{% else %}#2e7d32{% endif %};">
+                    {{ missing_count }}
+                </span>
+            </div>
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 5px;">
+                <strong>Actual Receipts:</strong><br>
+                {{ total_receipts }}
+            </div>
+        </div>
+    </div>
+    
+    {% if missing_numbers %}
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
+        <h3 style="color: #c62828;">⚠️ Missing Receipt Numbers</h3>
+        <p>The following receipt numbers are missing from the sequence:</p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0;">
+            {% for num in missing_numbers %}
+            <span style="background: #ffebee; padding: 8px 15px; border-radius: 20px; border: 1px solid #ef9a9a;">
+                #{{ num }}
+            </span>
+            {% endfor %}
+        </div>
+        
+        <div class="warning-box" style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 20px;">
+            <strong>⚠️ Action Required:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>Check if receipts with these numbers were issued but not recorded</li>
+                <li>Verify if any receipts were voided (voided numbers should still appear)</li>
+                <li>Investigate any potential gaps in receipt sequence</li>
+                <li>Print this report for the principal's review</li>
+            </ul>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="background: #e8f5e9; padding: 20px; border-radius: 10px; text-align: center;">
+        <h3 style="color: #2e7d32;">✅ No Missing Receipt Numbers</h3>
+        <p>All receipt numbers from #{{ first_receipt }} to #{{ last_receipt }} are present.</p>
+        <p style="margin-top: 10px;">Receipt sequence is complete and audit-ready.</p>
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 20px;">
+        <button onclick="window.print()" class="btn btn-primary">🖨️ Print Report</button>
+        <a href="{% url 'reports_dashboard' %}" class="btn">← Back to Reports</a>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 5px;
+}
+.btn-primary {
+    background: #1e3c72;
+}
+@media print {
+    .btn, .btn-primary { display: none; }
+}
+</style>
+{% endblock %}

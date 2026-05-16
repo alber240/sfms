@@ -1,0 +1,47 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Issue Item - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <h2>📤 Issue Item: {{ item.name }}</h2>
+        <p>Current Stock: <strong>{{ item.quantity }}</strong> {{ item.unit }}(s)</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Quantity to Issue *</label>
+                <input type="number" name="quantity" step="1" required placeholder="Enter quantity">
+                <small>Available: {{ item.quantity }} {{ item.unit }}(s)</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Issued To (Reference)</label>
+                <input type="text" name="reference" placeholder="e.g., Grade 10A, Teacher John, Student Name">
+            </div>
+            
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="3" placeholder="Reason for issuing this item"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-warning">Issue Item</button>
+                <a href="{% url 'inventory_list' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-warning { background: #ffc107; color: #856404; }
+small { display: block; color: #666; margin-top: 5px; }
+</style>
+{% endblock %}

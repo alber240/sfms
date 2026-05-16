@@ -1,0 +1,98 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Add Inventory Item - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>➕ Add Inventory Item</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Item Name *</label>
+                <input type="text" name="name" required placeholder="e.g., Notebooks, Pens, Chalk">
+            </div>
+            
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category">
+                    <option value="">Select Category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Category</label>
+                <div style="display: flex; gap: 10px;">
+                    <select name="category" style="flex: 1;">
+                        <option value="">Select Category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="{% url 'inventory_category_add' %}" class="btn-small btn-info" style="white-space: nowrap;">+ New</a>
+                </div>
+                <small>Select or create a category</small>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" value="0" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" name="unit" value="piece" placeholder="piece, dozen, ream, box">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Unit Price (LRD)</label>
+                    <input type="number" name="unit_price_lrd" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Unit Price (USD)</label>
+                    <input type="number" name="unit_price_usd" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Low Stock Alert</label>
+                    <input type="number" name="low_stock_threshold" value="10">
+                    <small>Alert when quantity falls below this number</small>
+                </div>
+                <div class="form-group">
+                    <label>Storage Location</label>
+                    <input type="text" name="location" placeholder="e.g., Store Room A, Shelf 2">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="3"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Item</button>
+                <a href="{% url 'inventory_list' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+small { display: block; color: #666; margin-top: 5px; }
+</style>
+{% endblock %}

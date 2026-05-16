@@ -6,8 +6,13 @@
     <title>Receipt #{{ receipt.receipt_number }}</title>
     <style>
         @media print {
-            body { margin: 0; padding: 0; }
-            .no-print { display: none; }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
         }
         
         body {
@@ -90,6 +95,17 @@
             justify-content: space-between;
         }
         
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 30px;
+            padding-top: 5px;
+        }
+        
         button {
             background: #1e3c72;
             color: white;
@@ -106,13 +122,13 @@
 </head>
 <body>
     <div class="no-print" style="text-align: center; margin-bottom: 20px;">
-        <button onclick="window.print()">??? Print Receipt</button>
-        <button onclick="window.location.href='/dashboard/'">?? Back to Dashboard</button>
+        <button onclick="window.print()">🖨️ Print Receipt</button>
+        <button onclick="window.location.href='/dashboard/'">🏠 Back to Dashboard</button>
     </div>
     
     <div class="receipt">
         <div class="header">
-            <div class="school-name">SFMS SCHOOL</div>
+            <div class="school-name">{{ school_name|default:"SFMS SCHOOL" }}</div>
             <div class="receipt-title">OFFICIAL RECEIPT</div>
             <div class="receipt-number">Receipt #: {{ receipt.receipt_number }}</div>
             <div>Date: {{ receipt.payment_date|date:"F d, Y" }}</div>
@@ -128,9 +144,9 @@
             <span>{{ receipt.student.admission_number }}</span>
         </div>
         
-        <div class="info-row">
+                <div class="info-row">
             <span><strong>Class:</strong></span>
-            <span>{{ receipt.student.get_get_class_name|default:"Not assigned" }}</span>
+            <span>{{ receipt.student.get_class_name }}</span>
         </div>
         
         <div class="info-row">
@@ -142,6 +158,13 @@
         <div class="info-row">
             <span><strong>Transaction ID:</strong></span>
             <span>{{ receipt.mobile_transaction_id }}</span>
+        </div>
+        {% endif %}
+        
+        {% if receipt.fee_category %}
+        <div class="info-row">
+            <span><strong>Fee Type:</strong></span>
+            <span>{{ receipt.fee_category }}</span>
         </div>
         {% endif %}
         
@@ -169,23 +192,35 @@
         </div>
         {% else %}
         <div class="balance" style="background: #d4edda; border-color: #28a745;">
-            <strong>? FULLY PAID</strong><br>
+            <strong>✅ FULLY PAID</strong><br>
             <span style="color: #155724;">No outstanding balance</span>
         </div>
         {% endif %}
         
         <div class="footer">
-            <p>This is a computer-generated receipt. No signature required.</p>
+            <p>This is a computer-generated receipt. No signature required. or will be dont manually</p>
             <p>Thank you for your payment!</p>
         </div>
         
-        <div class="signature">
-            <div>_____________________</div>
-            <div>_____________________</div>
-            <div>Cashier</div>
-            <div>Student/Parent</div>
+               <div class="signature">
+            <div class="signature-box">
+                {% if school_accountant_name %}
+                <div style="margin-bottom: 5px; font-weight: bold;">{{ school_accountant_name }}</div>
+                {% endif %}
+                <div class="signature-line">_____________________</div>
+                <div>Accountant/Cashier Signature</div>
+                <div style="font-size: 10px; color: #666;">(Official Stamp)</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">_____________________</div>
+                <div>Student/Parent Signature</div>
+                <div style="font-size: 10px; color: #666;">(Acknowledgment of Payment)</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #999;">
+            <p>This receipt is valid only with official stamp and signatures above.</p>
         </div>
     </div>
 </body>
 </html>
-

@@ -28,6 +28,9 @@ def student_list(request):
 
 @login_required
 def student_add(request):
+    from fees.models import FeeStructure, StudentFeeLedger
+    from fees.views import get_active_academic_year
+    
     if request.method == 'POST':
         try:
             student = Student.objects.create(
@@ -42,7 +45,44 @@ def student_add(request):
                 address=request.POST.get('address', ''),
                 notes=request.POST.get('notes', ''),
             )
-            messages.success(request, f'Student {student.full_name} added successfully!')
+            
+            # AUTO-ASSIGN FEES TO THE NEW STUDENT
+            academic_year = get_active_academic_year()
+            
+            if student.class_assigned:
+                # Get fee structures for this student's class, academic year, and student type
+                fee_structures = FeeStructure.objects.filter(
+                    class_assigned=student.class_assigned,
+                    academic_year=academic_year,
+                    student_type=student.student_type,
+                    is_active=True
+                )
+                
+                if fee_structures.exists():
+                    # Calculate totals
+                    semester1_total_lrd = sum(float(f.semester1_amount_lrd) for f in fee_structures)
+                    semester1_total_usd = sum(float(f.semester1_amount_usd) for f in fee_structures)
+                    semester2_total_lrd = sum(float(f.semester2_amount_lrd) for f in fee_structures)
+                    semester2_total_usd = sum(float(f.semester2_amount_usd) for f in fee_structures)
+                    
+                    # Create fee ledger for the student
+                    StudentFeeLedger.objects.create(
+                        student=student,
+                        academic_year=academic_year,
+                        semester1_total_lrd=...,
+                        semester1_total_usd=...,
+                        semester2_total_lrd=...,
+                        semester2_total_usd=...,
+                        
+                         
+                    )
+                    
+                    messages.success(request, f'Student {student.full_name} added successfully! Fees assigned: {semester1_total_lrd + semester2_total_lrd} LRD')
+                else:
+                    messages.warning(request, f'Student {student.full_name} added but no fee structure found for {academic_year}. Please configure fees first.')
+            else:
+                messages.warning(request, f'Student {student.full_name} added but no class assigned. Please assign a class and run auto-assign fees.')
+            
             return redirect('student_detail', pk=student.id)
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
@@ -102,10 +142,17 @@ def student_detail(request, pk):
 
 @login_required
 def student_edit(request, pk):
+    from fees.models import FeeStructure, StudentFeeLedger
+    from fees.views import get_active_academic_year
+    
     student = get_object_or_404(Student, pk=pk)
     classes = Class.objects.filter(is_active=True).order_by('name')
     
     if request.method == 'POST':
+        # Save old values to check if class or student type changed
+        old_class = student.class_assigned
+        old_student_type = student.student_type
+        
         student.first_name = request.POST.get('first_name')
         student.last_name = request.POST.get('last_name')
         student.class_assigned_id = request.POST.get('class_assigned') or None
@@ -116,11 +163,47 @@ def student_edit(request, pk):
         student.address = request.POST.get('address', '')
         student.notes = request.POST.get('notes', '')
         student.save()
+        
+        # If class or student type changed, reassign fees
+        if old_class != student.class_assigned or old_student_type != student.student_type:
+            academic_year = get_active_academic_year()
+            
+            if student.class_assigned:
+                fee_structures = FeeStructure.objects.filter(
+                    class_assigned=student.class_assigned,
+                    academic_year=academic_year,
+                    student_type=student.student_type,
+                    is_active=True
+                )
+                
+                if fee_structures.exists():
+                    semester1_total_lrd = sum(float(f.semester1_amount_lrd) for f in fee_structures)
+                    semester1_total_usd = sum(float(f.semester1_amount_usd) for f in fee_structures)
+                    semester2_total_lrd = sum(float(f.semester2_amount_lrd) for f in fee_structures)
+                    semester2_total_usd = sum(float(f.semester2_amount_usd) for f in fee_structures)
+                    
+                    ledger, created = StudentFeeLedger.objects.get_or_create(
+                        student=student,
+                        academic_year=academic_year,
+                        defaults={
+                            'semester1_total_lrd': semester1_total_lrd,
+                            'semester1_total_usd': semester1_total_usd,
+                            'semester2_total_lrd': semester2_total_lrd,
+                            'semester2_total_usd': semester2_total_usd,
+                        }
+                    )
+                    
+                    if not created:
+                        ledger.semester1_total_lrd = semester1_total_lrd
+                        ledger.semester1_total_usd = semester1_total_usd
+                        ledger.semester2_total_lrd = semester2_total_lrd
+                        ledger.semester2_total_usd = semester2_total_usd
+                        ledger.save()
+        
         messages.success(request, 'Student updated successfully!')
         return redirect('student_detail', pk=student.id)
     
     return render(request, 'students/edit.html', {'student': student, 'classes': classes})
-
 @login_required
 def student_delete(request, pk):
     student = get_object_or_404(Student, pk=pk)

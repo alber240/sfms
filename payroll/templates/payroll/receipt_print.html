@@ -62,13 +62,6 @@
             background: #f0f0f0;
         }
         
-        .deduction {
-            margin: 15px 0;
-            padding: 10px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-        }
-        
         .footer {
             margin-top: 30px;
             text-align: center;
@@ -81,6 +74,17 @@
             margin-top: 40px;
             display: flex;
             justify-content: space-between;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 30px;
+            padding-top: 5px;
         }
         
         button {
@@ -105,7 +109,7 @@
     
     <div class="receipt">
         <div class="header">
-            <div class="school-name">SFMS SCHOOL</div>
+            <div class="school-name">{{ school_name|default:"SFMS SCHOOL" }}</div>
             <div class="receipt-title">PAYROLL PAYMENT RECEIPT</div>
             <div class="receipt-number">Receipt #: {{ receipt.receipt_number }}</div>
             <div>Date: {{ receipt.printed_at|date:"F d, Y H:i" }}</div>
@@ -145,22 +149,19 @@
         </div>
         
         {% if entry.deduction_lrd > 0 or entry.deduction_usd > 0 %}
-        <div class="deduction">
-            <strong>📌 Deductions:</strong>
-            <div class="info-row">
-                <span>Amount Deducted:</span>
-                <span>
-                    {% if entry.deduction_lrd > 0 %}{{ entry.deduction_lrd|floatformat:2 }} LRD{% endif %}
-                    {% if entry.deduction_usd > 0 %}{{ entry.deduction_usd|floatformat:2 }} USD{% endif %}
-                </span>
-            </div>
-            {% if entry.deduction_reason %}
-            <div class="info-row">
-                <span>Reason:</span>
-                <span>{{ entry.deduction_reason }}</span>
-            </div>
-            {% endif %}
+        <div class="info-row">
+            <span><strong>Deductions:</strong></span>
+            <span>
+                {% if entry.deduction_lrd > 0 %}{{ entry.deduction_lrd|floatformat:2 }} LRD{% endif %}
+                {% if entry.deduction_usd > 0 %}{{ entry.deduction_usd|floatformat:2 }} USD{% endif %}
+            </span>
         </div>
+        {% if entry.deduction_reason %}
+        <div class="info-row">
+            <span><strong>Reason:</strong></span>
+            <span>{{ entry.deduction_reason }}</span>
+        </div>
+        {% endif %}
         {% endif %}
         
         <div class="amount">
@@ -175,10 +176,17 @@
         </div>
         
         <div class="signature">
-            <div>_____________________</div>
-            <div>_____________________</div>
-            <div>Accountant Signature</div>
-            <div>Staff Signature</div>
+            <div class="signature-box">
+                {% if accountant_name %}
+                <div style="margin-bottom: 5px; font-weight: bold;">{{ accountant_name }}</div>
+                {% endif %}
+                <div class="signature-line">_____________________</div>
+                <div>Accountant Signature</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">_____________________</div>
+                <div>Staff Signature</div>
+            </div>
         </div>
     </div>
 </body>

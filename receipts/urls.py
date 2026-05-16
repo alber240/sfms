@@ -8,4 +8,3 @@ urlpatterns = [
     path('print/<int:receipt_id>/', views.receipt_print, name='receipt_print'),
     path('batch/', views.batch_payment, name='batch_payment'),
 ]
-

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db import models
 from django.db.models import Q
 from datetime import date
+from decimal import Decimal
 
 from students.models import Student
 from fees.models import StudentFeeLedger
@@ -25,23 +26,29 @@ from .models import Receipt
 
 @login_required
 def payment_entry(request, student_id=None):
-    from decimal import Decimal
+    from fees.models import StudentFeeLedger
+    from fees.views import get_active_academic_year
     
     student = None
-    balance_lrd = Decimal('0')
-    balance_usd = Decimal('0')
-    total_due_lrd = Decimal('0')
-    total_due_usd = Decimal('0')
+    balance_lrd = 0
+    balance_usd = 0
+    total_due_lrd = 0
+    total_due_usd = 0
     
     if student_id:
         student = get_object_or_404(Student, id=student_id)
+        academic_year = get_active_academic_year()
+        
         # Get current balance from fee ledger
-        current_ledger = StudentFeeLedger.objects.filter(student=student).first()
-        if current_ledger:
-            balance_lrd = (current_ledger.semester1_total_lrd + current_ledger.semester2_total_lrd) - (current_ledger.semester1_paid_lrd + current_ledger.semester2_paid_lrd) - current_ledger.discount_applied_lrd
-            balance_usd = (current_ledger.semester1_total_usd + current_ledger.semester2_total_usd) - (current_ledger.semester1_paid_usd + current_ledger.semester2_paid_usd) - current_ledger.discount_applied_usd
-            total_due_lrd = current_ledger.semester1_total_lrd + current_ledger.semester2_total_lrd
-            total_due_usd = current_ledger.semester1_total_usd + current_ledger.semester2_total_usd
+        ledger = StudentFeeLedger.objects.filter(student=student, academic_year=academic_year).first()
+        if ledger:
+            # Calculate remaining balance (total - paid)
+            balance_lrd = (ledger.semester1_total_lrd + ledger.semester2_total_lrd) - (ledger.semester1_paid_lrd + ledger.semester2_paid_lrd)
+            balance_usd = (ledger.semester1_total_usd + ledger.semester2_total_usd) - (ledger.semester1_paid_usd + ledger.semester2_paid_usd)
+            total_due_lrd = ledger.semester1_total_lrd + ledger.semester2_total_lrd
+            total_due_usd = ledger.semester1_total_usd + ledger.semester2_total_usd
+    
+    # ... rest of the function ...
     
     if request.method == 'POST':
         student_id = request.POST.get('student_id')
@@ -108,6 +115,8 @@ def payment_entry(request, student_id=None):
 
 @login_required
 def receipt_print(request, receipt_id):
+    from core.models import SchoolSetting
+    
     receipt = get_object_or_404(Receipt, id=receipt_id)
     
     # Get updated balance after this payment
@@ -120,10 +129,16 @@ def receipt_print(request, receipt_id):
         remaining_balance_lrd = 0
         remaining_balance_usd = 0
     
+    # Get school settings including accountant name
+    school_name = SchoolSetting.objects.filter(key='school_name').first()
+    school_accountant_name = SchoolSetting.objects.filter(key='accountant_name').first()
+    
     context = {
         'receipt': receipt,
         'remaining_balance_lrd': remaining_balance_lrd,
         'remaining_balance_usd': remaining_balance_usd,
+        'school_name': school_name.value if school_name else 'SFMS SCHOOL',
+        'school_accountant_name': school_accountant_name.value if school_accountant_name else '',
     }
     return render(request, 'receipts/print.html', context)
 

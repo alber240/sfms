@@ -18,13 +18,14 @@ from .models import (
     StudentScholarship
 )
 
+from .models import AcademicSession
+
 def get_active_academic_year():
     """Get the currently active academic year"""
     active_session = AcademicSession.objects.filter(is_active=True).first()
     if active_session:
         return active_session.academic_year
-    # Default to current year if none active
-    return "2024-2025"
+    return '2025-2026'
 
 def get_active_semester():
     """Get the currently active semester"""
@@ -38,9 +39,35 @@ def get_active_semester():
 @login_required
 def fee_structure_matrix(request):
     """Matrix view for setting fees with Yearly, Sem1, Sem2 per category"""
-    classes = Class.objects.filter(is_active=True)
+    from .models import AcademicSession
+    from students.models import Class
+    from .models import FeeCategory, FeeStructure
+    
+    # Get class filter from request - define this FIRST
+    class_filter = request.GET.get('class_filter')
+    
+    # Get all classes and categories
+    all_classes = Class.objects.filter(is_active=True)
     categories = FeeCategory.objects.filter(is_active=True)
-    academic_year = request.GET.get('academic_year', get_active_academic_year())
+    
+    # Apply filter if present
+    if class_filter and class_filter.isdigit():
+        classes = all_classes.filter(id=int(class_filter))
+    else:
+        classes = all_classes
+        class_filter = None  # Reset if not valid
+    
+    # Check if user selected a specific year from the dropdown
+    selected_year = request.GET.get('academic_year')
+    
+    if selected_year:
+        request.session['selected_academic_year'] = selected_year
+        academic_year = selected_year
+    else:
+        academic_year = request.session.get('selected_academic_year')
+        if not academic_year:
+            active_session = AcademicSession.objects.filter(is_active=True).first()
+            academic_year = active_session.academic_year if active_session else '2025-2026'
     
     # Get or create fee structures for display
     fee_matrix = {}
@@ -68,6 +95,27 @@ def fee_structure_matrix(request):
                     'sem2_lrd': fee_struct.semester2_amount_lrd,
                     'sem2_usd': fee_struct.semester2_amount_usd,
                 }
+    
+    # Calculate class totals (server-side)
+    class_totals = {}
+    for class_obj in classes:
+        class_totals[class_obj.id] = {
+            'sem1': {'lrd': 0, 'usd': 0},
+            'sem2': {'lrd': 0, 'usd': 0}
+        }
+        for student_type in ['NEW', 'OLD']:
+            for category in categories:
+                fee_struct = FeeStructure.objects.filter(
+                    class_assigned=class_obj,
+                    academic_year=academic_year,
+                    student_type=student_type,
+                    category=category
+                ).first()
+                if fee_struct:
+                    class_totals[class_obj.id]['sem1']['lrd'] += float(fee_struct.semester1_amount_lrd)
+                    class_totals[class_obj.id]['sem1']['usd'] += float(fee_struct.semester1_amount_usd)
+                    class_totals[class_obj.id]['sem2']['lrd'] += float(fee_struct.semester2_amount_lrd)
+                    class_totals[class_obj.id]['sem2']['usd'] += float(fee_struct.semester2_amount_usd)
     
     if request.method == 'POST':
         for key, value in request.POST.items():
@@ -108,19 +156,26 @@ def fee_structure_matrix(request):
                     fee.save()
         
         messages.success(request, 'Fee structure saved successfully!')
-        return redirect(f'/fees/fee-matrix/?academic_year={academic_year}')
+        redirect_url = f'/fees/fee-matrix/?academic_year={academic_year}'
+        if class_filter:
+            redirect_url += f'&class_filter={class_filter}'
+        return redirect(redirect_url)
     
     available_years = ['2024-2025', '2025-2026', '2026-2027', '2027-2028']
-    active_year = get_active_academic_year()
+    active_session = AcademicSession.objects.filter(is_active=True).first()
+    active_year = active_session.academic_year if active_session else '2025-2026'
     
     context = {
         'classes': classes,
+        'all_classes': all_classes,
         'categories': categories,
         'academic_year': academic_year,
         'student_types': ['NEW', 'OLD'],
         'fee_matrix': fee_matrix,
+        'class_totals': class_totals,
         'available_years': available_years,
         'active_year': active_year,
+        'class_filter': class_filter,
     }
     return render(request, 'fees/fee_matrix.html', context)
 
@@ -228,8 +283,7 @@ def add_scholarship(request):
             category=category,
             is_percentage=is_percentage,
             discount_value=discount_value,
-            applies_to_semester=applies_to_semester,
-            max_students=max_students,
+            applies_to_max_students=max_students,
             description=description,
         )
         
@@ -335,8 +389,10 @@ def check_installment_reminders(request):
 
 @login_required
 def auto_assign_fees_v2(request):
+    from .models import AcademicSession
+    
     if request.method == 'POST':
-        academic_year = request.POST.get('academic_year', get_active_academic_year())
+        academic_year = request.POST.get('academic_year')
         students = Student.objects.filter(is_active=True)
         assigned_count = 0
         
@@ -351,10 +407,10 @@ def auto_assign_fees_v2(request):
                 is_active=True
             )
             
-            semester1_total_lrd = sum(f.semester1_amount_lrd for f in fee_structures)
-            semester1_total_usd = sum(f.semester1_amount_usd for f in fee_structures)
-            semester2_total_lrd = sum(f.semester2_amount_lrd for f in fee_structures)
-            semester2_total_usd = sum(f.semester2_amount_usd for f in fee_structures)
+            semester1_total_lrd = sum(float(f.semester1_amount_lrd) for f in fee_structures)
+            semester1_total_usd = sum(float(f.semester1_amount_usd) for f in fee_structures)
+            semester2_total_lrd = sum(float(f.semester2_amount_lrd) for f in fee_structures)
+            semester2_total_usd = sum(float(f.semester2_amount_usd) for f in fee_structures)
             
             ledger, created = StudentFeeLedger.objects.get_or_create(
                 student=student,
@@ -377,10 +433,67 @@ def auto_assign_fees_v2(request):
             assigned_count += 1
         
         messages.success(request, f'Fees assigned to {assigned_count} students for {academic_year}')
-        return redirect('fee_structure_matrix')
+        return redirect(f'/fees/fee-matrix/?academic_year={academic_year}')
     
-    academic_year = request.GET.get('academic_year', get_active_academic_year())
+    # GET request - get year from session or URL
+    academic_year = request.GET.get('academic_year') or request.session.get('selected_academic_year', '2025-2026')
     context = {
         'academic_year': academic_year,
     }
     return render(request, 'fees/auto_assign_v2.html', context)
+
+
+@login_required
+def manage_categories(request):
+    """Manage fee categories - add, edit, delete"""
+    categories = FeeCategory.objects.all().order_by('code')
+    return render(request, 'fees/manage_categories.html', {'categories': categories})
+
+@login_required
+def add_category(request):
+    """Add new fee category"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        code = request.POST.get('code')
+        
+        if name and code:
+            FeeCategory.objects.create(name=name, code=code.upper())
+            messages.success(request, f'Category "{name}" added successfully!')
+        else:
+            messages.error(request, 'Both name and code are required')
+        
+        return redirect('manage_categories')
+    
+    return render(request, 'fees/add_category.html')
+
+@login_required
+def edit_category(request, pk):
+    """Edit fee category"""
+    category = get_object_or_404(FeeCategory, pk=pk)
+    
+    if request.method == 'POST':
+        category.name = request.POST.get('name')
+        category.code = request.POST.get('code')
+        category.save()
+        messages.success(request, 'Category updated successfully!')
+        return redirect('manage_categories')
+    
+    return render(request, 'fees/edit_category.html', {'category': category})
+
+@login_required
+def delete_category(request, pk):
+    """Delete fee category (soft delete - set inactive)"""
+    category = get_object_or_404(FeeCategory, pk=pk)
+    
+    if request.method == 'POST':
+        # Check if category is used in any fee structures
+        used_in = FeeStructure.objects.filter(category=category).count()
+        if used_in > 0:
+            messages.warning(request, f'Cannot delete "{category.name}" because it is used in {used_in} fee structures. Set it as inactive instead.')
+            return redirect('manage_categories')
+        
+        category.delete()
+        messages.success(request, f'Category "{category.name}" deleted successfully!')
+        return redirect('manage_categories')
+    
+    return render(request, 'fees/delete_category.html', {'category': category})

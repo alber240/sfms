@@ -122,3 +122,184 @@ def arrears_report(request):
         'total_students': students_with_receipts.count(),
     }
     return render(request, 'reports/arrears.html', context)
+
+@login_required
+def missing_receipts_report(request):
+    """Report showing missing receipt numbers"""
+    from receipts.models import Receipt
+    from django.db.models import Max, Min
+    
+    # Get all receipt numbers
+    receipts = Receipt.objects.filter(is_voided=False).order_by('receipt_number')
+    
+    if not receipts.exists():
+        context = {'missing_numbers': [], 'message': 'No receipts found'}
+        return render(request, 'reports/missing_receipts.html', context)
+    
+    first_receipt = receipts.first().receipt_number
+    last_receipt = receipts.last().receipt_number
+    
+    # Get all existing numbers
+    existing_numbers = set(receipts.values_list('receipt_number', flat=True))
+    
+    # Find missing numbers
+    missing_numbers = []
+    for num in range(first_receipt, last_receipt + 1):
+        if num not in existing_numbers:
+            missing_numbers.append(num)
+    
+    context = {
+        'missing_numbers': missing_numbers,
+        'first_receipt': first_receipt,
+        'last_receipt': last_receipt,
+        'total_receipts': len(existing_numbers),
+        'expected_count': last_receipt - first_receipt + 1,
+        'missing_count': len(missing_numbers),
+    }
+    return render(request, 'reports/missing_receipts.html', context)
+
+@login_required
+def missing_receipts_report(request):
+    """Report showing missing receipt numbers"""
+    from receipts.models import Receipt
+    
+    receipts = Receipt.objects.filter(is_voided=False).order_by('receipt_number')
+    
+    if not receipts.exists():
+        context = {'missing_numbers': [], 'message': 'No receipts found'}
+        return render(request, 'reports/missing_receipts.html', context)
+    
+    first_receipt = receipts.first().receipt_number
+    last_receipt = receipts.last().receipt_number
+    
+    existing_numbers = set(receipts.values_list('receipt_number', flat=True))
+    
+    missing_numbers = []
+    for num in range(first_receipt, last_receipt + 1):
+        if num not in existing_numbers:
+            missing_numbers.append(num)
+    
+    context = {
+        'missing_numbers': missing_numbers,
+        'first_receipt': first_receipt,
+        'last_receipt': last_receipt,
+        'total_receipts': len(existing_numbers),
+        'expected_count': last_receipt - first_receipt + 1,
+        'missing_count': len(missing_numbers),
+    }
+    return render(request, 'reports/missing_receipts.html', context)
+
+
+@login_required
+def export_audit_summary(request):
+    """Export one-page summary for annual audit"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill
+    from django.db.models import Sum
+    from datetime import datetime
+    from receipts.models import Receipt
+    from expenses.models import Expense
+    from students.models import Student
+    from django.http import HttpResponse
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Audit Summary"
+    
+    ws['A1'] = "SFMS - SCHOOL FINANCIAL MANAGEMENT SYSTEM"
+    ws['A1'].font = Font(size=16, bold=True)
+    ws.merge_cells('A1:F1')
+    
+    ws['A2'] = f"Audit Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    ws.merge_cells('A2:F2')
+    
+    ws['A4'] = "SUMMARY STATISTICS"
+    ws['A4'].font = Font(bold=True, size=12)
+    
+    total_students = Student.objects.filter(is_active=True).count()
+    total_receipts = Receipt.objects.filter(is_voided=False).count()
+    total_collected_lrd = Receipt.objects.filter(is_voided=False).aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    total_collected_usd = Receipt.objects.filter(is_voided=False).aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+    total_expenses_lrd = Expense.objects.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    total_expenses_usd = Expense.objects.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+    
+    stats_data = [
+        ['Total Active Students', total_students],
+        ['Total Receipts Issued', total_receipts],
+        ['Total Collections (LRD)', f"{total_collected_lrd:,.2f}"],
+        ['Total Collections (USD)', f"{total_collected_usd:,.2f}"],
+        ['Total Expenses (LRD)', f"{total_expenses_lrd:,.2f}"],
+        ['Total Expenses (USD)', f"{total_expenses_usd:,.2f}"],
+        ['Net Surplus (LRD)', f"{total_collected_lrd - total_expenses_lrd:,.2f}"],
+    ]
+    
+    for i, row in enumerate(stats_data, start=6):
+        ws[f'A{i}'] = row[0]
+        ws[f'B{i}'] = row[1]
+        ws[f'A{i}'].font = Font(bold=True)
+    
+    ws['A15'] = "RECENT RECEIPTS (Last 20)"
+    ws['A15'].font = Font(bold=True, size=12)
+    
+    headers = ['Receipt #', 'Date', 'Student', 'Amount LRD', 'Amount USD', 'Method']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=17, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+    
+    recent_receipts = Receipt.objects.filter(is_voided=False).order_by('-receipt_number')[:20]
+    row = 18
+    for receipt in recent_receipts:
+        ws.cell(row=row, column=1, value=receipt.receipt_number)
+        ws.cell(row=row, column=2, value=receipt.payment_date.strftime('%Y-%m-%d'))
+        ws.cell(row=row, column=3, value=receipt.student.full_name)
+        ws.cell(row=row, column=4, value=float(receipt.amount_lrd))
+        ws.cell(row=row, column=5, value=float(receipt.amount_usd))
+        ws.cell(row=row, column=6, value=receipt.get_payment_method_display())
+        row += 1
+    
+    for col in ['A', 'B', 'C', 'D', 'E', 'F']:
+        ws.column_dimensions[col].width = 20
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="sfms_audit_summary_{datetime.now().strftime("%Y%m%d")}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def export_receipts_excel(request):
+    """Export all receipts to Excel"""
+    import openpyxl
+    from openpyxl.styles import Font
+    from datetime import datetime
+    from receipts.models import Receipt
+    from django.http import HttpResponse
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "All Receipts"
+    
+    headers = ['Receipt #', 'Date', 'Student', 'Admission #', 'Class', 'Amount LRD', 'Amount USD', 'Method', 'Voided']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+    
+    receipts = Receipt.objects.all().order_by('-receipt_number')
+    row = 2
+    for receipt in receipts:
+        ws.cell(row=row, column=1, value=receipt.receipt_number)
+        ws.cell(row=row, column=2, value=receipt.payment_date.strftime('%Y-%m-%d'))
+        ws.cell(row=row, column=3, value=receipt.student.full_name)
+        ws.cell(row=row, column=4, value=receipt.student.admission_number)
+        ws.cell(row=row, column=5, value=receipt.student.get_class_name())
+        ws.cell(row=row, column=6, value=float(receipt.amount_lrd))
+        ws.cell(row=row, column=7, value=float(receipt.amount_usd))
+        ws.cell(row=row, column=8, value=receipt.get_payment_method_display())
+        ws.cell(row=row, column=9, value='Yes' if receipt.is_voided else 'No')
+        row += 1
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="sfms_receipts_{datetime.now().strftime("%Y%m%d")}.xlsx"'
+    wb.save(response)
+    return response

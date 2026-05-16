@@ -1,15 +1,26 @@
 ﻿{% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Staff Management - SFMS{% endblock %}
+{% block title %}
+    {% if LANGUAGE == 'fr' %}Gestion du Personnel{% else %}Staff Management{% endif %} - SFMS
+{% endblock %}
 
 {% block content %}
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>👥 Staff Management</h1>
+        <h1>
+            {% if LANGUAGE == 'fr' %}👥 Gestion du Personnel{% else %}👥 Staff Management{% endif %}
+        </h1>
         <div>
-            <a href="{% url 'staff_add' %}" class="btn btn-primary">+ Add Staff</a>
-            <a href="{% url 'process_payroll' %}" class="btn btn-success">💰 Bulk Payroll</a>
-            <a href="{% url 'payroll_history' %}" class="btn btn-info">📜 Payroll History</a>
+            <a href="{% url 'staff_add' %}" class="btn btn-primary">
+                {% if LANGUAGE == 'fr' %}➕ Ajouter Personnel{% else %}➕ Add Staff{% endif %}
+            </a>
+            <a href="{% url 'process_payroll' %}" class="btn btn-success">
+                {% if LANGUAGE == 'fr' %}💰 Paie en Groupe{% else %}💰 Bulk Payroll{% endif %}
+            </a>
+            <a href="{% url 'payroll_history' %}" class="btn btn-info">
+                {% if LANGUAGE == 'fr' %}📜 Historique des Paies{% else %}📜 Payroll History{% endif %}
+            </a>
         </div>
     </div>
     
@@ -17,37 +28,49 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Position</th>
-                    <th>Monthly Salary</th>
-                    <th>Phone</th>
-                    <th>Actions</th>
+                    <th>{% if LANGUAGE == 'fr' %}ID{% else %}ID{% endif %}</th>
+                    <th>{% if LANGUAGE == 'fr' %}Nom{% else %}Name{% endif %}</th>
+                    <th>{% if LANGUAGE == 'fr' %}Poste{% else %}Position{% endif %}</th>
+                    <th>{% if LANGUAGE == 'fr' %}Salaire Mensuel{% else %}Monthly Salary{% endif %}</th>
+                    <th>{% if LANGUAGE == 'fr' %}Téléphone{% else %}Phone{% endif %}</th>
+                    <th>{% if LANGUAGE == 'fr' %}Actions{% else %}Actions{% endif %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for staff in staff_members %}
                 <tr>
-                    <td>{{ staff.staff_id }}</td>
-                    <td>{{ staff.name }}</td>
-                    <td>{{ staff.position }}</td>
+                    <td>{{ staff.staff_id }}</a></td>
+                    <td>{{ staff.name }}</a></td>
+                    <td>{{ staff.position }}</a></td>
                     <td>
                         {% if staff.monthly_salary_lrd > 0 %}{{ staff.monthly_salary_lrd }} LRD{% endif %}
                         {% if staff.monthly_salary_lrd > 0 and staff.monthly_salary_usd > 0 %}<br>{% endif %}
                         {% if staff.monthly_salary_usd > 0 %}{{ staff.monthly_salary_usd }} USD{% endif %}
-                    </td>
-                    <td>{{ staff.phone|default:"-" }}</td>
-                    <td>
-                        <a href="{% url 'staff_edit' staff.id %}" class="btn-small">Edit</a>
-                        <a href="{% url 'staff_advance' staff.id %}" class="btn-small btn-info">Deduction</a>
-                        <a href="{% url 'pay_staff_individual' staff.id %}" class="btn-small btn-success">Pay</a>
-                        <a href="{% url 'staff_payroll_history' staff.id %}" class="btn-small btn-warning">History</a>
-                        <a href="{% url 'staff_delete' staff.id %}" class="btn-small btn-danger">Delete</a>
+                      </a></td>
+                    <td>{{ staff.phone|default:"-" }}</a></td>
+                    <td class="actions">
+                        <a href="{% url 'staff_edit' staff.id %}" class="btn-small">
+                            {% if LANGUAGE == 'fr' %}Modifier{% else %}Edit{% endif %}
+                        </a>
+                        <a href="{% url 'staff_advance' staff.id %}" class="btn-small btn-info">
+                            {% if LANGUAGE == 'fr' %}Déduction{% else %}Deduction{% endif %}
+                        </a>
+                        <a href="{% url 'pay_staff_individual' staff.id %}" class="btn-small btn-success">
+                            {% if LANGUAGE == 'fr' %}Payer{% else %}Pay{% endif %}
+                        </a>
+                        <a href="{% url 'staff_payroll_history' staff.id %}" class="btn-small btn-warning">
+                            {% if LANGUAGE == 'fr' %}Historique{% else %}History{% endif %}
+                        </a>
+                        <a href="{% url 'staff_delete' staff.id %}" class="btn-small btn-danger">
+                            {% if LANGUAGE == 'fr' %}Supprimer{% else %}Delete{% endif %}
+                        </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" style="text-align: center;">No staff members added yet</td>
+                    <td colspan="6" style="text-align: center;">
+                        {% if LANGUAGE == 'fr' %}Aucun employé ajouté{% else %}No staff members added yet{% endif %}
+                    </a></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -55,7 +78,9 @@
     </div>
     
     <div style="margin-top: 20px;">
-        <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
+        <a href="{% url 'settings_dashboard' %}" class="btn">
+            {% if LANGUAGE == 'fr' %}← Retour aux Paramètres{% else %}← Back to Settings{% endif %}
+        </a>
     </div>
 </div>
 
@@ -65,11 +90,24 @@
 .btn-primary { background: #1e3c72; }
 .btn-success { background: #28a745; }
 .btn-info { background: #17a2b8; }
+.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; margin: 0 2px; }
 .btn-warning { background: #ffc107; color: #856404; }
 .btn-danger { background: #dc3545; }
-.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; margin: 0 2px; }
 .table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
 .table th { background: #f5f5f5; }
+.actions { white-space: nowrap; }
 </style>
+
+<script>
+// Language persistence for this page
+document.addEventListener('DOMContentLoaded', function() {
+    // Get language from parent page or localStorage
+    const savedLang = localStorage.getItem('sfms_lang');
+    if (savedLang && savedLang !== '{{ LANGUAGE }}') {
+        // Reload with new language
+        window.location.href = '/set-language/?language=' + savedLang + '&next={{ request.path }}';
+    }
+});
+</script>
 {% endblock %}

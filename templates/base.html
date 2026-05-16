@@ -13,6 +13,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
         .navbar h2 { font-size: 24px; }
         .navbar a {
@@ -23,6 +24,11 @@
             border-radius: 5px;
         }
         .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
         
         .container {
             max-width: 1200px;
@@ -84,17 +90,6 @@
         }
         .table th { background: #f5f5f5; font-weight: bold; }
         
-        .pagination {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .pagination a {
-            margin: 0 5px;
-            padding: 5px 10px;
-            background: #f5f5f5;
-            text-decoration: none;
-        }
-        
         .message {
             padding: 10px;
             margin: 10px 0;
@@ -103,69 +98,60 @@
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
         
-        .delete-confirm {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        /* Reminder Popup */
-        .reminder-popup {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #fff3cd;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            width: 320px;
-            z-index: 9999;
-            border: 1px solid #ffc107;
-            display: none;
-        }
-        .reminder-header {
-            background: #ffc107;
-            padding: 12px 15px;
-            border-radius: 10px 10px 0 0;
-            color: #856404;
-            font-weight: bold;
-        }
-        .reminder-body {
-            padding: 15px;
-        }
-        .reminder-close {
-            float: right;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #856404;
-        }
-        
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .container { padding: 15px; }
+            .navbar { flex-direction: column; gap: 10px; }
+            .navbar-right { justify-content: center; }
         }
     </style>
 </head>
 <body>
-        <div class="navbar">
+    <div class="navbar">
         <h2>🏫 SFMS</h2>
-        <div>
+        <div class="navbar-right">
             {% if user.username == 'principal' %}
-                <a href="/principal/">Dashboard</a>
-                <a href="/students/">View Students</a>
-                <a href="/reports/">Reports</a>
+                <a href="/principal/">
+                    {% if LANGUAGE == 'fr' %}Tableau de Bord{% else %}Dashboard{% endif %}
+                </a>
+                <a href="/students/">
+                    {% if LANGUAGE == 'fr' %}Voir Étudiants{% else %}View Students{% endif %}
+                </a>
+                <a href="/reports/">
+                    {% if LANGUAGE == 'fr' %}Rapports{% else %}Reports{% endif %}
+                </a>
             {% else %}
-                <a href="/dashboard/">Dashboard</a>
-                <a href="/students/">Students</a>
-                <a href="/receipts/quick/">Record Payment</a>
-                <a href="/expenses/">Expenses</a>
-                <a href="/settings/">Settings</a>
+                <a href="/dashboard/">
+                    {% if LANGUAGE == 'fr' %}Tableau de Bord{% else %}Dashboard{% endif %}
+                </a>
+                <a href="/students/">
+                    {% if LANGUAGE == 'fr' %}Étudiants{% else %}Students{% endif %}
+                </a>
+                <a href="/receipts/quick/">
+                    {% if LANGUAGE == 'fr' %}Enregistrer Paiement{% else %}Record Payment{% endif %}
+                </a>
+                <a href="/expenses/">
+                    {% if LANGUAGE == 'fr' %}Dépenses{% else %}Expenses{% endif %}
+                </a>
+                <a href="/settings/">
+                    {% if LANGUAGE == 'fr' %}Paramètres{% else %}Settings{% endif %}
+                </a>
             {% endif %}
-            <a href="/logout/">Logout</a>
+            
+            <!-- Language Switcher -->
+            <form method="post" action="/set-language/" style="display: inline; margin-left: 15px;">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <select name="language" onchange="this.form.submit()" style="padding: 5px 10px; border-radius: 5px; background: rgba(255,255,255,0.2); color: white; border: none;">
+                    <option value="en" {% if LANGUAGE == 'en' %}selected{% endif %}>English</option>
+                    <option value="fr" {% if LANGUAGE == 'fr' %}selected{% endif %}>Français</option>
+                </select>
+            </form>
+            
+            <a href="/logout/">
+                {% if LANGUAGE == 'fr' %}Déconnexion{% else %}Logout{% endif %}
+            </a>
         </div>
-    </div>
     </div>
     
     {% if messages %}
@@ -181,17 +167,23 @@
     {% block content %}{% endblock %}
     
     <!-- 4 PM Reminder Popup -->
-    <div id="reminderPopup" class="reminder-popup">
-        <div class="reminder-header">
-            <span>⏰ 4 PM Reminder</span>
-            <button class="reminder-close" onclick="closeReminder()">&times;</button>
+    <div id="reminderPopup" class="reminder-popup" style="display: none; position: fixed; bottom: 20px; right: 20px; background: #fff3cd; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 320px; z-index: 9999; border: 1px solid #ffc107;">
+        <div style="background: #ffc107; padding: 12px 15px; border-radius: 10px 10px 0 0; color: #856404; font-weight: bold;">
+            <span>⏰ {% if LANGUAGE == 'fr' %}Rappel 16h{% else %}4 PM Reminder{% endif %}</span>
+            <button onclick="closeReminder()" style="float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: #856404;">&times;</button>
         </div>
-        <div class="reminder-body">
-            <p>📱 Did you record today's mobile money transactions?</p>
-            <p style="font-size: 12px; color: #666; margin-top: 5px;">Check MTN MoMo and Orange Money SMS messages.</p>
+        <div style="padding: 15px;">
+            <p>📱 {% if LANGUAGE == 'fr' %}Avez-vous enregistré les transactions Mobile Money d'aujourd'hui ?{% else %}Did you record today's mobile money transactions?{% endif %}</p>
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                {% if LANGUAGE == 'fr' %}Vérifiez vos SMS MTN MoMo et Orange Money.{% else %}Check MTN MoMo and Orange Money SMS messages.{% endif %}
+            </p>
             <div style="margin-top: 15px; text-align: center;">
-                <button onclick="dismissReminder()" style="background: #ffc107; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Yes, recorded</button>
-                <button onclick="closeReminder()" style="background: #6c757d; border: none; padding: 8px 16px; border-radius: 5px; color: white; cursor: pointer;">Later</button>
+                <button onclick="dismissReminder()" style="background: #ffc107; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                    {% if LANGUAGE == 'fr' %}Oui, enregistré{% else %}Yes, recorded{% endif %}
+                </button>
+                <button onclick="closeReminder()" style="background: #6c757d; border: none; padding: 8px 16px; border-radius: 5px; color: white; cursor: pointer;">
+                    {% if LANGUAGE == 'fr' %}Plus tard{% else %}Later{% endif %}
+                </button>
             </div>
         </div>
     </div>
@@ -199,18 +191,13 @@
     <script>
         function checkReminder() {
             fetch('/check-reminder/')
-                .then(function(response) {
-                    return response.json();
-                })
+                .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    console.log('Reminder check:', data);
                     if (data.show_reminder === true) {
                         document.getElementById('reminderPopup').style.display = 'block';
                     }
                 })
-                .catch(function(error) {
-                    console.log('Error checking reminder:', error);
-                });
+                .catch(function(error) { console.log('Error checking reminder:', error); });
         }
         
         function closeReminder() {
@@ -219,18 +206,20 @@
         
         function dismissReminder() {
             fetch('/dismiss-reminder/')
-                .then(function() {
-                    closeReminder();
-                })
-                .catch(function(error) {
-                    console.log('Error dismissing reminder:', error);
-                    closeReminder();
-                });
+                .then(function() { closeReminder(); })
+                .catch(function(error) { console.log('Error dismissing reminder:', error); closeReminder(); });
         }
         
-        // Check when page loads
         setTimeout(checkReminder, 1000);
+        
+        // Auto Backup on Exit
+        let backupTriggered = false;
+        window.addEventListener('beforeunload', function() {
+            if (!backupTriggered) {
+                backupTriggered = true;
+                navigator.sendBeacon('/backup/auto-backup/');
+            }
+        });
     </script>
 </body>
 </html>
-

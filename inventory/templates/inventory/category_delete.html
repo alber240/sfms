@@ -1,0 +1,32 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Delete Category - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 50px auto; text-align: center;">
+        <h2>⚠️ Confirm Delete</h2>
+        <p>Are you sure you want to delete category <strong>{{ category.name }}</strong>?</p>
+        
+        {% if category.inventoryitem_set.count > 0 %}
+        <p style="color: red;">This category has {{ category.inventoryitem_set.count }} item(s) assigned to it. Cannot delete.</p>
+        {% else %}
+        <p style="color: orange;">This action cannot be undone.</p>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            {% if category.inventoryitem_set.count == 0 %}
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            {% endif %}
+            <a href="{% url 'inventory_category_list' %}" class="btn">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-danger { background: #dc3545; }
+</style>
+{% endblock %}

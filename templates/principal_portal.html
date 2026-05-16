@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Principal Portal - SFMS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fb;
+            padding: 16px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 22px; margin-bottom: 5px; }
+        .header p { opacity: 0.8; font-size: 13px; }
+        .readonly-badge {
+            background: #ffc107;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .stat-card h3 { font-size: 11px; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .number { font-size: 28px; font-weight: bold; color: #1e3c72; }
+        .stat-card small { font-size: 11px; color: #999; }
+        .receipt-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .receipt-card h3 { margin-bottom: 12px; color: #1e3c72; font-size: 16px; }
+        .receipt-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .receipt-item:last-child { border-bottom: none; }
+        .receipt-student { font-weight: 500; }
+        .receipt-student small { font-size: 11px; color: #999; display: block; }
+        .receipt-amount { font-weight: bold; color: #28a745; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 11px;
+        }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .header h1 { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="readonly-badge">📖 READ-ONLY ACCESS</div>
+        <h1>🏫 School Financial Management</h1>
+        <p>Principal Dashboard - {{ today|date:"l, F j, Y" }}</p>
+        <div>
+            <a href="/logout/" class="logout-btn">Logout</a>
+            <button onclick="location.reload()" class="refresh-btn">🔄 Refresh</button>
+        </div>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Today's Collections</h3>
+            <div class="number">{{ today_collected|floatformat:0 }} LRD</div>
+        </div>
+        <div class="stat-card">
+            <h3>This Month</h3>
+            <div class="number">{{ month_collected|floatformat:0 }} LRD</div>
+        </div>
+        <div class="stat-card">
+            <h3>Students with Balance</h3>
+            <div class="number">{{ students_with_balance }}</div>
+            <small>out of {{ total_students }}</small>
+        </div>
+    </div>
+    
+    <div class="receipt-card">
+        <h3>📋 Recent Payments</h3>
+        {% for receipt in recent_receipts %}
+        <div class="receipt-item">
+            <div class="receipt-student">
+                {{ receipt.student.full_name }}
+                <small>Receipt #{{ receipt.receipt_number }} | {{ receipt.payment_date|date:"M d, Y" }}</small>
+            </div>
+            <div class="receipt-amount">{{ receipt.amount_lrd|floatformat:0 }} LRD</div>
+        </div>
+        {% empty %}
+        <p style="text-align: center; color: #999; padding: 20px;">No recent payments</p>
+        {% endfor %}
+    </div>
+    
+    <div class="footer">
+        <p>SFMS - Liberia Edition | Data is read-only</p>
+        <p style="margin-top: 5px;">Contact accountant for detailed reports</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Cloud Sync - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>☁️ Cloud Sync</h1>
+    <p>Sync your data to the cloud for backup and access from anywhere</p>
+    
+    <div class="info-box" style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <strong>💡 How Cloud Sync Works:</strong>
+        <ul>
+            <li>✅ System works offline at all times</li>
+            <li>✅ Data syncs when you click the button</li>
+            <li>✅ Work from any computer (sync first)</li>
+            <li>✅ Principal can view reports from phone</li>
+        </ul>
+    </div>
+    
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>☁️ Supabase Configuration</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Supabase URL</label>
+                <input type="text" name="supabase_url" value="{{ supabase_url }}" 
+                       placeholder="https://your-project.supabase.co" class="form-control">
+                <small>From your Supabase project settings</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Supabase Anon Key</label>
+                <input type="text" name="supabase_key" value="{{ supabase_key|default:'' }}" 
+                       placeholder="eyJhbGciOiJIUzI1NiIs..." class="form-control">
+                <small>From your Supabase project API settings</small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </form>
+        
+        {% if is_configured %}
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <a href="{% url 'cloud_sync_now' %}" class="btn btn-success">☁️ Sync Now</a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+.btn-success { background: #28a745; }
+</style>
+{% endblock %}

@@ -283,6 +283,7 @@ def pay_staff_individual(request, staff_id):
     from datetime import datetime
     from decimal import Decimal
     import uuid
+    from core.email_utils import send_payroll_receipt_email
     
     staff = get_object_or_404(Staff, pk=staff_id)
     current_month = datetime.now().month
@@ -291,6 +292,7 @@ def pay_staff_individual(request, staff_id):
     if request.method == 'POST':
         month = int(request.POST.get('month'))
         year = int(request.POST.get('year'))
+        send_email = request.POST.get('send_email') == 'on'
         
         # Check if this staff was already paid for this month
         payroll_period, created = PayrollPeriod.objects.get_or_create(
@@ -309,9 +311,9 @@ def pay_staff_individual(request, staff_id):
         
         # Show warning if processing different month
         if year < current_year or (year == current_year and month < current_month):
-            messages.warning(request, f'⚠️ You are processing payroll for {month}/{year} (past month). Please verify this is correct.')
+            messages.warning(request, f'⚠️ Processing past month {month}/{year}. Verify this is correct.')
         elif year > current_year or (year == current_year and month > current_month):
-            messages.warning(request, f'⚠️ You are processing payroll for {month}/{year} (future month). This is for advance payment only.')
+            messages.warning(request, f'⚠️ Processing future month {month}/{year}. Advance payment only.')
         
         with transaction.atomic():
             # Get deductions for this specific month and year
@@ -359,10 +361,18 @@ def pay_staff_individual(request, staff_id):
             payroll_period.total_amount_usd = Decimal(str(payroll_period.total_amount_usd)) + max(net_pay_usd, Decimal('0'))
             payroll_period.is_processed = True
             payroll_period.save()
+            
+            # Send email receipt if requested
+            if send_email and staff.email:
+                success, message = send_payroll_receipt_email(staff, payroll_entry, payroll_period)
+                if success:
+                    messages.info(request, f'📧 Receipt sent to {staff.email}')
+                else:
+                    messages.warning(request, f'Email failed: {message}')
+            elif send_email and not staff.email:
+                messages.warning(request, f'No email for {staff.name}. Add email to staff profile.')
         
-        messages.success(request, f'✅ Payroll processed for {staff.name} - {month}/{year}! Net Pay: {net_pay_lrd:,.2f} LRD / {net_pay_usd:,.2f} USD')
-        
-        # Redirect to receipt print page
+        messages.success(request, f'✅ Payroll processed for {staff.name} - {month}/{year}! Net Pay: {net_pay_lrd:,.2f} LRD')
         return redirect('payroll_receipt_print', entry_id=payroll_entry.id)
     
     context = {
@@ -379,20 +389,26 @@ def pay_staff_individual(request, staff_id):
 
 
 
-
 @login_required
 def payroll_receipt_print(request, entry_id):
     """Print payroll receipt"""
     from decimal import Decimal
+    from core.models import SchoolSetting
     
     entry = get_object_or_404(PayrollEntry, id=entry_id)
     receipt = PayrollReceipt.objects.filter(payroll_entry=entry).first()
+    
+    # Get school settings
+    school_name_setting = SchoolSetting.objects.filter(key='school_name').first()
+    accountant_name_setting = SchoolSetting.objects.filter(key='accountant_name').first()
     
     context = {
         'entry': entry,
         'receipt': receipt,
         'staff': entry.staff,
         'payroll_period': entry.payroll_period,
+        'school_name': school_name_setting.value if school_name_setting else 'SFMS SCHOOL',
+        'accountant_name': accountant_name_setting.value if accountant_name_setting else '',
     }
     return render(request, 'payroll/receipt_print.html', context)
 

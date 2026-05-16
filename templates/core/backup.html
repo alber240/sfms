@@ -1,0 +1,77 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Backup - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>💾 Backup Management</h1>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        
+        <div class="card">
+            <h2>Create Backup</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="backup_to_usb"> Copy to USB Drive
+                    </label>
+                    {% if usb_drives %}
+                        <small style="color: green;">✓ USB detected: {{ usb_drives|join:", " }}</small>
+                    {% else %}
+                        <small style="color: orange;">⚠ No USB drive detected</small>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">Create Backup Now</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>About Auto-Backup</h2>
+            <ul>
+                <li>✅ Automatic backup when you close the program</li>
+                <li>✅ Database and all receipt photos are backed up</li>
+                <li>✅ Backups are saved to the "backups" folder</li>
+                <li>✅ If USB is connected, backup is copied there too</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-top: 30px;">
+        <h2>Recent Backups</h2>
+        <table class="table">
+            <thead><tr><th>File Name</th><th>Size (MB)</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for backup in backup_files %}
+                <tr>
+                    <td>{{ backup.name }}</td>
+                    <td>{{ backup.size|floatformat:1 }} MB</td>
+                    <td>{{ backup.date }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">No backups found. Create your first backup!</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="info-box" style="margin-top: 20px; background: #e3f2fd; padding: 15px; border-radius: 5px;">
+        <strong>💡 Backup Instructions:</strong>
+        <ul>
+            <li>Always insert a USB drive before closing the program for auto-backup</li>
+            <li>Keep backups in a safe location (off-site if possible)</li>
+            <li>If laptop is lost/stolen, install SFMS on new laptop and restore from backup</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+.btn-primary { background: #1e3c72; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+.form-group { margin-bottom: 15px; }
+ul { margin-left: 20px; margin-top: 10px; }
+li { margin: 5px 0; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+</style>
+{% endblock %}

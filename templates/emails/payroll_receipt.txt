@@ -1,0 +1,26 @@
+﻿{{ school_name }}
+PAYROLL RECEIPT
+
+Staff Name: {{ staff.name }}
+Staff ID: {{ staff.staff_id }}
+Position: {{ staff.position }}
+Payment Period: {{ payroll_period.get_month_display }} {{ payroll_period.year }}
+Payment Date: {{ payroll_period.processed_at|date:"Y-m-d H:i" }}
+
+PAYMENT DETAILS:
+Base Salary: 
+  LRD: {{ payroll_entry.base_salary_lrd|floatformat:2 }}
+  USD: {{ payroll_entry.base_salary_usd|floatformat:2 }}
+
+Deductions:
+  LRD: {{ payroll_entry.deduction_lrd|floatformat:2 }}
+  USD: {{ payroll_entry.deduction_usd|floatformat:2 }}
+
+NET PAY:
+  LRD: {{ payroll_entry.net_pay_lrd|floatformat:2 }}
+  USD: {{ payroll_entry.net_pay_usd|floatformat:2 }}
+
+This is a computer-generated receipt. Please keep for your records.
+
+Thank you for your service!
+{{ school_name }}

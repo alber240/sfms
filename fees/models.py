@@ -138,46 +138,54 @@ class InstallmentPlan(models.Model):
         return f"{self.class_assigned.name} - {self.get_semester_display()} - Installment {self.installment_number}"
 
 class StudentFeeLedger(models.Model):
-    PAYMENT_FOR_CHOICES = [
-        ('YEARLY', 'Yearly (Both Semesters)'),
-        ('FIRST', '1st Semester'),
-        ('SECOND', '2nd Semester'),
-    ]
+    """Student fee ledger - tracks what each student owes and has paid"""
     
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='fee_ledger')
     academic_year = models.CharField(max_length=10, default='2024')
     
+    # Semester 1 totals and payments
     semester1_total_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     semester1_total_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     semester1_paid_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     semester1_paid_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
+    # Semester 2 totals and payments
     semester2_total_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     semester2_total_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     semester2_paid_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     semester2_paid_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
+    # Discounts applied
     discount_applied_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount_applied_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
+    # Metadata
     last_payment_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     @property
     def semester1_balance_lrd(self):
-        return self.semester1_total_lrd - self.semester1_paid_lrd
+        return self.semester1_total_lrd - self.semester1_paid_lrd - (self.discount_applied_lrd / 2 if self.discount_applied_lrd else 0)
     
     @property
     def semester2_balance_lrd(self):
-        return self.semester2_total_lrd - self.semester2_paid_lrd
+        return self.semester2_total_lrd - self.semester2_paid_lrd - (self.discount_applied_lrd / 2 if self.discount_applied_lrd else 0)
     
     @property
     def total_balance_lrd(self):
         return self.semester1_balance_lrd + self.semester2_balance_lrd
     
+    @property
+    def total_paid_lrd(self):
+        return self.semester1_paid_lrd + self.semester2_paid_lrd
+    
+    @property
+    def total_due_lrd(self):
+        return self.semester1_total_lrd + self.semester2_total_lrd
+    
     def __str__(self):
-        return f"{self.student.full_name} - {self.academic_year}"
+        return f"{self.student.full_name} - {self.academic_year} - Balance: {self.total_balance_lrd} LRD"
 
 class InstallmentReminder(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)

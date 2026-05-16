@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container">
-    <h1>?? Record Payment</h1>
+    <h1>💰 Record Payment</h1>
     
     {% if not student %}
     <div class="search-box">
@@ -23,7 +23,7 @@
             <div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <strong>{{ s.full_name }}</strong><br>
-                    <small>Admission: {{ s.admission_number }} | Class: {{ s.get_get_class_name|default:"Not assigned" }} | Phone: {{ s.parent_phone|default:"-" }}</small>
+                    <small>Admission: {{ s.admission_number }} | Class: {{ s.class_name|default:"Not assigned" }} | Phone: {{ s.parent_phone|default:"-" }}</small>
                     <br>
                     <small style="color: {% if s.balance_lrd > 0 %}red{% else %}green{% endif %};">
                         Balance: {{ s.balance_lrd|floatformat:2 }} LRD / {{ s.balance_usd|floatformat:2 }} USD
@@ -44,7 +44,7 @@
         <h3>Student Information</h3>
         <p><strong>Name:</strong> {{ student.full_name }}</p>
         <p><strong>Admission #:</strong> {{ student.admission_number }}</p>
-        <p><strong>Class:</strong> {{ student.get_get_class_name|default:"Not assigned" }}</p>
+        <p><strong>Class:</strong> {{ student.class_name|default:"Not assigned" }}</p>
         
         <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #ddd;">
             <h3>Fee Summary</h3>
@@ -69,32 +69,41 @@
         {% csrf_token %}
         <input type="hidden" name="student_id" value="{{ student.id }}">
         
-                <div class="form-group">
+        <!-- Fee Category Selection -->
+        <div class="form-group">
+            <label>Fee Category *</label>
+            <select name="fee_category" required class="form-control">
+                <option value="">-- Select Fee Type --</option>
+                <option value="TUITION">Tuition</option>
+                <option value="REGISTRATION">Registration</option>
+                <option value="LABORATORY">Laboratory</option>
+                <option value="PTA">PTA</option>
+                <option value="DEVELOPMENT">Development</option>
+                <option value="SPORTS">Sports</option>
+                <option value="OTHER">Other</option>
+            </select>
+            <small>Select which fee this payment is for</small>
+        </div>
+        
+        <div class="form-group">
             <label>Payment Period *</label>
             <select name="payment_period" required class="payment-period-select">
                 <option value="FIRST">1st Semester (Active Period)</option>
                 <option value="SECOND">2nd Semester</option>
                 <option value="YEARLY">Yearly (Both Semesters - Full Payment)</option>
             </select>
-            <small>Select which semester this payment applies to. Yearly payment covers both semesters.</small>
+            <small>Select which semester this payment applies to</small>
         </div>
-<div class="form-row">
+        
+        <div class="form-row">
             <div class="form-group">
                 <label>Amount (LRD)</label>
-                <input type="number" name="amount_lrd" step="0.01" placeholder="0.00" 
-                       max="{{ balance_lrd }}" {% if balance_lrd == 0 %}disabled{% endif %}>
-                {% if balance_lrd > 0 %}
-                <small>Max: {{ balance_lrd|floatformat:2 }} LRD</small>
-                {% endif %}
+                <input type="number" name="amount_lrd" step="0.01" placeholder="0.00">
             </div>
             
             <div class="form-group">
                 <label>Amount (USD)</label>
-                <input type="number" name="amount_usd" step="0.01" placeholder="0.00"
-                       max="{{ balance_usd }}" {% if balance_usd == 0 %}disabled{% endif %}>
-                {% if balance_usd > 0 %}
-                <small>Max: {{ balance_usd|floatformat:2 }} USD</small>
-                {% endif %}
+                <input type="number" name="amount_usd" step="0.01" placeholder="0.00">
             </div>
         </div>
         
@@ -109,6 +118,11 @@
         <div class="form-group" id="mobile_field" style="display: none;">
             <label>Mobile Money Transaction ID</label>
             <input type="text" name="mobile_transaction_id" placeholder="Enter transaction ID from SMS">
+        </div>
+        
+        <div class="form-group">
+            <label>Notes (Optional)</label>
+            <textarea name="notes" rows="2" placeholder="Any additional notes about this payment"></textarea>
         </div>
         
         <div class="form-actions">
@@ -152,7 +166,19 @@
     border: none;
     cursor: pointer;
 }
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
 </style>
 {% endblock %}
-
-

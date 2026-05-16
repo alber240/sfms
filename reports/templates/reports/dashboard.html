@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Reports - SFMS{% endblock %}
 
@@ -8,28 +8,34 @@
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px;">
         
-        <a href="{% url 'daily_cash_report' %}" class="btn" style="text-decoration: none; text-align: center;">
+        <a href="{% url 'daily_cash' %}" class="btn" style="text-decoration: none; text-align: center;">
             <div class="icon" style="font-size: 48px;">??</div>
             <div class="title" style="font-size: 18px; font-weight: bold;">Daily Cash Position</div>
             <div class="desc">Opening + collections - expenses = closing</div>
         </a>
         
-        <a href="{% url 'weekly_collections' %}" class="btn" style="text-decoration: none; text-align: center;">
+        <a href="{% url 'weekly' %}" class="btn" style="text-decoration: none; text-align: center;">
             <div class="icon" style="font-size: 48px;">??</div>
             <div class="title" style="font-size: 18px; font-weight: bold;">Weekly Collections</div>
             <div class="desc">Fee collection by class</div>
         </a>
         
-        <a href="{% url 'termly_summary' %}" class="btn" style="text-decoration: none; text-align: center;">
+        <a href="{% url 'termly' %}" class="btn" style="text-decoration: none; text-align: center;">
             <div class="icon" style="font-size: 48px;">??</div>
             <div class="title" style="font-size: 18px; font-weight: bold;">Termly Summary</div>
             <div class="desc">Income vs Expenditure</div>
         </a>
         
-        <a href="{% url 'arrears_report' %}" class="btn" style="text-decoration: none; text-align: center;">
+        <a href="{% url 'arrears' %}" class="btn" style="text-decoration: none; text-align: center;">
             <div class="icon" style="font-size: 48px;">??</div>
             <div class="title" style="font-size: 18px; font-weight: bold;">Arrears List</div>
             <div class="desc">Students with outstanding balances</div>
+        </a>
+
+                <a href="{% url 'missing_receipts' %}" class="btn" style="text-decoration: none; text-align: center;">
+            <div class="icon" style="font-size: 48px;">🔍</div>
+            <div class="title" style="font-size: 18px; font-weight: bold;">Missing Receipts</div>
+            <div class="desc">Find skipped receipt numbers (Audit)</div>
         </a>
     </div>
 </div>
@@ -50,3 +56,5 @@
 }
 </style>
 {% endblock %}
+
+
