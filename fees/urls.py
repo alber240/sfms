@@ -29,4 +29,7 @@ urlpatterns = [
 path('add-category/', views.add_category, name='add_fee_category'),
 path('edit-category/<int:pk>/', views.edit_category, name='edit_fee_category'),
 path('delete-category/<int:pk>/', views.delete_category, name='delete_fee_category'),
+path('inactive-categories/', views.inactive_categories, name='inactive_categories'),
+path('toggle-category/<int:pk>/', views.toggle_category_status, name='toggle_category_status'),
+path('fee-matrix/', views.fee_structure_matrix, name='fee_matrix'),
 ]

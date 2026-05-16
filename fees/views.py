@@ -96,7 +96,7 @@ def fee_structure_matrix(request):
                     'sem2_usd': fee_struct.semester2_amount_usd,
                 }
     
-    # Calculate class totals (server-side)
+    # Calculate class totals
     class_totals = {}
     for class_obj in classes:
         class_totals[class_obj.id] = {
@@ -446,7 +446,7 @@ def auto_assign_fees_v2(request):
 @login_required
 def manage_categories(request):
     """Manage fee categories - add, edit, delete"""
-    categories = FeeCategory.objects.all().order_by('code')
+    categories = FeeCategory.objects.all().order_by('-is_active','code')
     return render(request, 'fees/manage_categories.html', {'categories': categories})
 
 @login_required
@@ -454,18 +454,32 @@ def add_category(request):
     """Add new fee category"""
     if request.method == 'POST':
         name = request.POST.get('name')
-        code = request.POST.get('code')
+        code = request.POST.get('code', '').upper().strip()
         
-        if name and code:
-            FeeCategory.objects.create(name=name, code=code.upper())
-            messages.success(request, f'Category "{name}" added successfully!')
-        else:
+        if not name or not code:
             messages.error(request, 'Both name and code are required')
+            return redirect('manage_categories')
+        
+        # Check if category already exists (including inactive)
+        existing = FeeCategory.objects.filter(code=code).first()
+        
+        if existing:
+            if existing.is_active:
+                messages.error(request, f'Category with code "{code}" already exists!')
+            else:
+                # Reactivate inactive category
+                existing.is_active = True
+                existing.name = name
+                existing.save()
+                messages.success(request, f'Category "{name}" was inactive and has been reactivated!')
+        else:
+            # Create new category
+            FeeCategory.objects.create(name=name, code=code, is_active=True)
+            messages.success(request, f'Category "{name}" added successfully!')
         
         return redirect('manage_categories')
     
     return render(request, 'fees/add_category.html')
-
 @login_required
 def edit_category(request, pk):
     """Edit fee category"""
@@ -497,3 +511,48 @@ def delete_category(request, pk):
         return redirect('manage_categories')
     
     return render(request, 'fees/delete_category.html', {'category': category})
+
+# Add to fees/views.py
+@login_required
+def inactive_categories(request):
+    """View and reactivate inactive categories"""
+    categories = FeeCategory.objects.filter(is_active=False).order_by('code')
+    
+    if request.method == 'POST':
+        category_id = request.POST.get('category_id')
+        action = request.POST.get('action')
+        
+        category = get_object_or_404(FeeCategory, pk=category_id)
+        
+        if action == 'reactivate':
+            category.is_active = True
+            category.save()
+            messages.success(request, f'Category "{category.name}" has been reactivated!')
+        elif action == 'delete':
+            # Check if category is used
+            used_in = FeeStructure.objects.filter(category=category).count()
+            if used_in == 0:
+                category.delete()
+                messages.success(request, f'Category "{category.name}" deleted permanently!')
+            else:
+                messages.error(request, f'Cannot delete "{category.name}" - used in {used_in} fee structures.')
+        
+        return redirect('inactive_categories')
+    
+    context = {'categories': categories}
+    return render(request, 'fees/inactive_categories.html', context)
+
+@login_required
+def toggle_category_status(request, pk):
+    """Toggle category between active and inactive"""
+    category = get_object_or_404(FeeCategory, pk=pk)
+    
+    if category.is_active:
+        category.is_active = False
+        messages.success(request, f'Category "{category.name}" has been deactivated.')
+    else:
+        category.is_active = True
+        messages.success(request, f'Category "{category.name}" has been activated.')
+    
+    category.save()
+    return redirect('manage_categories')

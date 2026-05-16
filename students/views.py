@@ -33,24 +33,47 @@ def student_add(request):
     
     if request.method == 'POST':
         try:
+            # Get form data with proper defaults
+            admission_number = request.POST.get('admission_number', '').strip()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            class_assigned_id = request.POST.get('class_assigned')
+            student_type = request.POST.get('student_type', 'NEW')
+            parent_name = request.POST.get('parent_name', '').strip()
+            parent_phone = request.POST.get('parent_phone', '').strip()
+            parent_phone_alternative = request.POST.get('parent_phone_alternative', '').strip()
+            address = request.POST.get('address', '').strip()
+            notes = request.POST.get('notes', '').strip()
+            
+            # Validate required fields
+            if not admission_number:
+                messages.error(request, 'Admission number is required')
+                classes = Class.objects.filter(is_active=True).order_by('name')
+                return render(request, 'students/add.html', {'classes': classes})
+            
+            if not first_name or not last_name:
+                messages.error(request, 'First name and last name are required')
+                classes = Class.objects.filter(is_active=True).order_by('name')
+                return render(request, 'students/add.html', {'classes': classes})
+            
+            # Create student
             student = Student.objects.create(
-                admission_number=request.POST.get('admission_number'),
-                first_name=request.POST.get('first_name'),
-                last_name=request.POST.get('last_name'),
-                class_assigned_id=request.POST.get('class_assigned') or None,
-                student_type=request.POST.get('student_type', 'NEW'),
-                parent_name=request.POST.get('parent_name', ''),
-                parent_phone=request.POST.get('parent_phone', ''),
-                parent_phone_alternative=request.POST.get('parent_phone_alternative', ''),
-                address=request.POST.get('address', ''),
-                notes=request.POST.get('notes', ''),
+                admission_number=admission_number,
+                first_name=first_name,
+                last_name=last_name,
+                class_assigned_id=class_assigned_id if class_assigned_id else None,
+                student_type=student_type,
+                parent_name=parent_name,
+                parent_phone=parent_phone,
+                parent_phone_alternative=parent_phone_alternative,
+                address=address,
+                notes=notes,
             )
             
-            # AUTO-ASSIGN FEES TO THE NEW STUDENT
+            # Auto-assign fees
             academic_year = get_active_academic_year()
             
             if student.class_assigned:
-                # Get fee structures for this student's class, academic year, and student type
                 fee_structures = FeeStructure.objects.filter(
                     class_assigned=student.class_assigned,
                     academic_year=academic_year,
@@ -59,33 +82,32 @@ def student_add(request):
                 )
                 
                 if fee_structures.exists():
-                    # Calculate totals
                     semester1_total_lrd = sum(float(f.semester1_amount_lrd) for f in fee_structures)
                     semester1_total_usd = sum(float(f.semester1_amount_usd) for f in fee_structures)
                     semester2_total_lrd = sum(float(f.semester2_amount_lrd) for f in fee_structures)
                     semester2_total_usd = sum(float(f.semester2_amount_usd) for f in fee_structures)
                     
-                    # Create fee ledger for the student
                     StudentFeeLedger.objects.create(
                         student=student,
                         academic_year=academic_year,
-                        semester1_total_lrd=...,
-                        semester1_total_usd=...,
-                        semester2_total_lrd=...,
-                        semester2_total_usd=...,
-                        
-                         
+                        semester1_total_lrd=semester1_total_lrd,
+                        semester1_total_usd=semester1_total_usd,
+                        semester2_total_lrd=semester2_total_lrd,
+                        semester2_total_usd=semester2_total_usd,
                     )
                     
-                    messages.success(request, f'Student {student.full_name} added successfully! Fees assigned: {semester1_total_lrd + semester2_total_lrd} LRD')
+                    messages.success(request, f'Student {student.full_name} added successfully with fees!')
                 else:
-                    messages.warning(request, f'Student {student.full_name} added but no fee structure found for {academic_year}. Please configure fees first.')
+                    messages.warning(request, f'Student added but no fee structure found. Please set up fees first.')
             else:
-                messages.warning(request, f'Student {student.full_name} added but no class assigned. Please assign a class and run auto-assign fees.')
+                messages.warning(request, f'Student added but no class assigned. Please assign a class.')
             
             return redirect('student_detail', pk=student.id)
+            
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
+            classes = Class.objects.filter(is_active=True).order_by('name')
+            return render(request, 'students/add.html', {'classes': classes})
     
     classes = Class.objects.filter(is_active=True).order_by('name')
     return render(request, 'students/add.html', {'classes': classes})

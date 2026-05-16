@@ -45,6 +45,8 @@ def daily_cash_report(request):
 @login_required
 def weekly_collections(request):
     """Weekly fee collection by class"""
+    from datetime import date, timedelta
+    
     week_start = request.GET.get('week_start', date.today() - timedelta(days=7))
     if isinstance(week_start, str):
         week_start = datetime.strptime(week_start, '%Y-%m-%d').date()
@@ -56,9 +58,11 @@ def weekly_collections(request):
         is_voided=False
     )
     
+    # Group by student's class - FIXED: use get_class_name() method
     collections_by_class = {}
     for receipt in receipts:
-        class_name = receipt.student.class_name or "Not Assigned"
+        # Use the method instead of property
+        class_name = receipt.student.get_class_name()
         if class_name not in collections_by_class:
             collections_by_class[class_name] = {'lrd': 0, 'usd': 0, 'count': 0}
         collections_by_class[class_name]['lrd'] += float(receipt.amount_lrd)
@@ -116,10 +120,28 @@ def termly_summary(request):
 @login_required
 def arrears_report(request):
     """Students with outstanding balances"""
-    students_with_receipts = Student.objects.filter(receipts__isnull=False).distinct()
+    from fees.models import StudentFeeLedger
+    
+    students_with_balance = []
+    students = Student.objects.filter(is_active=True)
+    
+    for student in students:
+        ledger = StudentFeeLedger.objects.filter(student=student).first()
+        if ledger and ledger.total_balance_lrd > 0:
+            students_with_balance.append({
+                'admission_number': student.admission_number,
+                'name': student.full_name,
+                'class_name': student.get_class_name(),  # Use method
+                'parent_phone': student.parent_phone,
+                'balance_lrd': ledger.total_balance_lrd,
+            })
+    
+    # Sort by balance (highest first)
+    students_with_balance.sort(key=lambda x: x['balance_lrd'], reverse=True)
+    
     context = {
-        'students': students_with_receipts,
-        'total_students': students_with_receipts.count(),
+        'students': students_with_balance,
+        'total_students': len(students_with_balance),
     }
     return render(request, 'reports/arrears.html', context)
 

@@ -1,0 +1,35 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Delete Fee Category - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 50px auto; text-align: center;">
+        <h2>⚠️ Confirm Delete</h2>
+        <p>Are you sure you want to delete the fee category <strong>{{ category.name }}</strong>?</p>
+        
+        {% if category.feestructure_set.count > 0 %}
+        <div class="alert alert-danger" style="background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>⚠️ Warning!</strong><br>
+            This category is used in {{ category.feestructure_set.count }} fee structure(s).
+            <br>Deleting it will remove it from all fee structures.
+        </div>
+        {% endif %}
+        
+        <p style="color: red; margin: 20px 0;">This action cannot be undone!</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <a href="{% url 'manage_categories' %}" class="btn">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
+.btn-danger { background: #dc3545; }
+.alert { margin: 20px 0; }
+</style>
+{% endblock %}

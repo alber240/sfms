@@ -41,10 +41,10 @@ def logout_view(request):
     return redirect('login')
 
 @login_required
-@login_required
 def dashboard_view(request):
     from .models import ExchangeRate
     from datetime import date
+    from django.db.models import Sum
     
     today = date.today()
     
@@ -55,15 +55,20 @@ def dashboard_view(request):
     
     exchange_rate = exchange_rate_obj.lrd_to_usd if exchange_rate_obj else 200
     
+    # Today's collections
     today_receipts = Receipt.objects.filter(payment_date=today, is_voided=False)
     total_collected_lrd = today_receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
     total_collected_usd = today_receipts.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
     
+    # Today's expenses
     today_expenses = Expense.objects.filter(expense_date=today)
     total_expenses_lrd = today_expenses.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
     total_expenses_usd = today_expenses.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
     
-    net_combined = (total_collected_lrd - total_expenses_lrd) + ((total_collected_usd - total_expenses_usd) * exchange_rate)
+    # Calculate net separately
+    net_lrd = total_collected_lrd - total_expenses_lrd
+    net_usd = total_collected_usd - total_expenses_usd
+    net_combined = net_lrd + (net_usd * exchange_rate)
     
     recent_receipts = Receipt.objects.filter(is_voided=False).order_by('-payment_date', '-id')[:10]
     
@@ -72,6 +77,8 @@ def dashboard_view(request):
         'total_collected_usd': total_collected_usd,
         'total_expenses_lrd': total_expenses_lrd,
         'total_expenses_usd': total_expenses_usd,
+        'net_lrd': net_lrd,
+        'net_usd': net_usd,
         'net_combined': net_combined,
         'exchange_rate': exchange_rate,
         'recent_receipts': recent_receipts,
