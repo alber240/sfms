@@ -17,18 +17,34 @@ except ImportError:
     InstallmentReminder = None
 
 def login_view(request):
+    from .models import UserProfile
+    
     if request.user.is_authenticated:
-        if request.user.username == 'principal':
-            return redirect('principal_dashboard')
+        # Check if user needs to change password
+        try:
+            profile = request.user.profile
+            if profile.require_password_change:
+                return redirect('change_password')
+        except:
+            pass
         return redirect('dashboard')
     
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
+        
         if user:
             login(request, user)
-            if username == 'principal':
+            # Check if temporary password
+            try:
+                profile = user.profile
+                if profile.require_password_change:
+                    return redirect('change_password')
+            except:
+                pass
+            
+            if user.username.startswith('pri_'):
                 return redirect('principal_dashboard')
             return redirect('dashboard')
         else:
@@ -39,6 +55,39 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+# Add to core/views.py
+@login_required
+def change_password(request):
+    """Force password change on first login"""
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if new_password != confirm_password:
+            messages.error(request, 'Passwords do not match')
+            return render(request, 'change_password.html')
+        
+        if len(new_password) < 8:
+            messages.error(request, 'Password must be at least 8 characters')
+            return render(request, 'change_password.html')
+        
+        request.user.set_password(new_password)
+        request.user.require_password_change = False
+        request.user.save()
+        
+        # Re-authenticate
+        from django.contrib.auth import authenticate, login
+        user = authenticate(username=request.user.username, password=new_password)
+        login(request, user)
+        
+        messages.success(request, 'Password changed successfully!')
+        
+        if request.user.username.startswith('pri_'):
+            return redirect('principal_dashboard')
+        return redirect('dashboard')
+    
+    return render(request, 'change_password.html')
 
 @login_required
 def dashboard_view(request):
@@ -553,3 +602,64 @@ def check_and_send_emails(request):
     if sent > 0:
         print(f"📧 {message}")
     return JsonResponse({'sent': sent, 'message': message})
+
+
+@login_required
+def change_password(request):
+    """Force password change on first login"""
+    from .models import UserProfile
+    
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if new_password != confirm_password:
+            messages.error(request, 'Passwords do not match')
+            return render(request, 'change_password.html')
+        
+        if len(new_password) < 8:
+            messages.error(request, 'Password must be at least 8 characters')
+            return render(request, 'change_password.html')
+        
+        request.user.set_password(new_password)
+        request.user.save()
+        
+        # Update profile
+        try:
+            profile = request.user.profile
+            profile.require_password_change = False
+            profile.save()
+        except:
+            pass
+        
+        # Re-authenticate
+        user = authenticate(username=request.user.username, password=new_password)
+        login(request, user)
+        
+        messages.success(request, 'Password changed successfully!')
+        
+        if request.user.username.startswith('pri_'):
+            return redirect('principal_dashboard')
+        return redirect('dashboard')
+    
+    return render(request, 'change_password.html')
+
+def check_update(request):
+    """Check if a newer version is available"""
+    from django.http import JsonResponse
+    import json
+    from pathlib import Path
+    
+    version_file = Path(__file__).parent.parent / 'version.json'
+    current_version = '1.0'
+    if version_file.exists():
+        with open(version_file, 'r') as f:
+            data = json.load(f)
+            current_version = data.get('version', '1.0')
+    
+    return JsonResponse({
+        'update_available': False,
+        'current_version': current_version,
+        'latest_version': current_version,
+        'message': 'You have the latest version'
+    })

@@ -13,18 +13,32 @@ def staff_list(request):
 @login_required
 def staff_add(request):
     if request.method == 'POST':
-        staff = Staff.objects.create(
-            name=request.POST.get('name'),
-            position=request.POST.get('position'),
-            staff_id=request.POST.get('staff_id'),
-            monthly_salary_lrd=request.POST.get('monthly_salary_lrd', 0),
-            monthly_salary_usd=request.POST.get('monthly_salary_usd', 0),
-            phone=request.POST.get('phone', ''),
-            email=request.POST.get('email', ''),
-            hire_date=request.POST.get('hire_date'),
-        )
-        messages.success(request, f'Staff {staff.name} added successfully!')
-        return redirect('staff_list')
+        try:
+            # Get values with proper default for decimal fields
+            monthly_salary_lrd = request.POST.get('monthly_salary_lrd', '0')
+            monthly_salary_usd = request.POST.get('monthly_salary_usd', '0')
+            
+            # Convert empty strings to '0'
+            if monthly_salary_lrd == '':
+                monthly_salary_lrd = '0'
+            if monthly_salary_usd == '':
+                monthly_salary_usd = '0'
+            
+            staff = Staff.objects.create(
+                name=request.POST.get('name'),
+                position=request.POST.get('position'),
+                staff_id=request.POST.get('staff_id'),
+                monthly_salary_lrd=monthly_salary_lrd,
+                monthly_salary_usd=monthly_salary_usd,
+                phone=request.POST.get('phone', ''),
+                email=request.POST.get('email', ''),
+                hire_date=request.POST.get('hire_date'),
+            )
+            messages.success(request, f'Staff {staff.name} added successfully!')
+            return redirect('staff_list')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('staff_add')
     
     return render(request, 'payroll/staff_add.html')
 

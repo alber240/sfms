@@ -38,11 +38,11 @@
                         <tbody>
                             {% for s in students %}
                             <tr>
-                                <td><input type="checkbox" name="selected_students" value="{{ s.id }}" class="student-checkbox"></td>
-                                <td>{{ s.admission_number }}</td>
-                                <td>{{ s.full_name }}</td>
-                                <td>{{ s.get_class_name }}</td>
-                                <td>{{ s.balance|floatformat:0 }} LRD</td>
+                                <td><input type="checkbox" name="selected_students" value="{{ s.id }}" class="student-checkbox"></a>
+                                <td>{{ s.admission_number }}</a>
+                                <td>{{ s.full_name }}</a>
+                                <td>{{ s.get_class_name }}</a>
+                                <td>{{ s.balance|floatformat:0 }} LRD</a>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -68,18 +68,37 @@
                 <input type="hidden" name="academic_year" value="{{ academic_year }}">
                 
                 <div style="margin-bottom: 15px;">
-                    <label>Payment Period:</label>
-                    <select name="payment_period" class="payment-period-select">
-                        <option value="FIRST" {% if payment_period == 'FIRST' %}selected{% endif %}>1st Semester</option>
-                        <option value="SECOND" {% if payment_period == 'SECOND' %}selected{% endif %}>2nd Semester</option>
-                        <option value="YEARLY" {% if payment_period == 'YEARLY' %}selected{% endif %}>Yearly (Both Semesters)</option>
-                    </select>
+                    <div class="form-group">
+                        <label>Payment Period:</label>
+                        <select name="payment_period" class="payment-period-select">
+                            <option value="FIRST" {% if payment_period == 'FIRST' %}selected{% endif %}>1st Semester</option>
+                            <option value="SECOND" {% if payment_period == 'SECOND' %}selected{% endif %}>2nd Semester</option>
+                            <option value="YEARLY" {% if payment_period == 'YEARLY' %}selected{% endif %}>Yearly (Both Semesters)</option>
+                        </select>
+                    </div>
                     
-                    <label style="margin-left: 15px;">Payment Method:</label>
-                    <select name="payment_method">
-                        <option value="CASH">Cash</option>
-                        <option value="MOBILE_MONEY">Mobile Money</option>
-                    </select>
+                    <div class="form-group">
+                        <label>Fee Category (For all students):</label>
+                        <select name="fee_category" required class="form-control">
+                            <option value="">-- Select Fee Category --</option>
+                            <option value="TUITION">Tuition</option>
+                            <option value="REGISTRATION">Registration</option>
+                            <option value="LABORATORY">Laboratory</option>
+                            <option value="PTA">PTA</option>
+                            <option value="DEVELOPMENT">Development</option>
+                            <option value="SPORTS">Sports</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                        <small>Select which fee this payment is for</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Payment Method:</label>
+                        <select name="payment_method">
+                            <option value="CASH">Cash</option>
+                            <option value="MOBILE_MONEY">Mobile Money</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div style="max-height: 400px; overflow-y: auto;">
@@ -91,27 +110,40 @@
                                 <th>Due Amount</th>
                                 <th>Amount (LRD)</th>
                                 <th>Amount (USD)</th>
+                                <th>Fee Category</th>
                                 <th></th>
                             </thead>
                         <tbody>
                             {% for s in batch_students %}
                             <tr>
-                                <td>{{ s.admission_number }}</td>
-                                <td>{{ s.full_name }}</td>
-                                <td>{{ s.due|floatformat:0 }} LRD</td>
+                                <td>{{ s.admission_number }}</a>
+                                <td>{{ s.full_name }}</a>
+                                <td>{{ s.due|floatformat:0 }} LRD</a>
                                 <td>
                                     <input type="number" name="amount_lrd_{{ s.id }}" step="0.01" 
                                            value="0" style="width: 100px;" class="amount-input" 
                                            data-due="{{ s.due }}" data-student="{{ s.id }}">
-                                </td>
+                                 </a>
                                 <td>
                                     <input type="number" name="amount_usd_{{ s.id }}" step="0.01" 
                                            value="0" style="width: 100px;">
-                                </td>
+                                 </a>
+                                <td>
+                                    <select name="fee_category_{{ s.id }}" class="fee-category-select" style="width: 120px;">
+                                        <option value="">-- Select --</option>
+                                        <option value="TUITION">Tuition</option>
+                                        <option value="REGISTRATION">Registration</option>
+                                        <option value="LABORATORY">Laboratory</option>
+                                        <option value="PTA">PTA</option>
+                                        <option value="DEVELOPMENT">Development</option>
+                                        <option value="SPORTS">Sports</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                 </a>
                                 <td>
                                     <button type="submit" name="remove_from_batch" value="{{ s.id }}" 
                                             class="btn-small btn-danger" formnovalidate>Remove</button>
-                                </td>
+                                 </a>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -201,6 +233,25 @@
     width: 100px;
     padding: 5px;
     text-align: right;
+}
+.fee-category-select {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 </style>
 

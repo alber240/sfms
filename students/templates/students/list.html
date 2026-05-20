@@ -5,50 +5,89 @@
 {% block content %}
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>👨‍🎓 Students</h2>
-        <a href="{% url 'student_add' %}" class="btn btn-primary">+ Add Student</a>
+        <h1>👨‍🎓 Student Management</h1>
+        {% if user.username != 'principal' %}
+        <a href="{% url 'student_add' %}" class="btn btn-primary">+ Add New Student</a>
+        {% endif %}
     </div>
     
-    <form method="get" style="margin-bottom: 20px;">
-        <input type="text" name="q" placeholder="Search by name, admission number, or phone..." 
-               value="{{ query }}" style="width: 70%; padding: 8px;">
-        <button type="submit" class="btn">Search</button>
-    </form>
+    <div style="margin-bottom: 20px;">
+        <form method="get">
+            <input type="text" name="q" placeholder="Search by name, admission number, or parent phone..." 
+                   value="{{ query }}" style="width: 70%; padding: 10px;">
+            <button type="submit" class="btn">Search</button>
+        </form>
+    </div>
     
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Admission</th><th>Name</th><th>Class</th><th>Type</th><th>Phone</th><th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for s in students %}
-            <tr>
-                <td>{{ s.admission_number }}</td>
-                <td>{{ s.full_name }}</td>
-                <td>{{ s.get_class_name }}</td>
-                <td>{{ s.get_student_type_display }}</td>
-                <td>{{ s.parent_phone|default:"-" }}</td>
-                <td>
-                    <a href="{% url 'student_detail' s.id %}" class="btn-small">View</a>
-                    <a href="{% url 'payment_entry' s.id %}" class="btn-small btn-success">Pay</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6" style="text-align: center;">No students</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Admission #</th>
+                    <th>Full Name</th>
+                    <th>Class</th>
+                    <th>Student Type</th>
+                    <th>Parent Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>{{ s.admission_number }}</td>
+                    <td>{{ s.full_name }}</td>
+                    <td>{{ s.get_class_name }}</td>
+                    <td>{{ s.get_student_type_display }}</td>
+                    <td>{{ s.parent_phone|default:"-" }}</td>
+                    <td class="actions">
+                        <a href="{% url 'student_detail' s.id %}" class="btn-small">View</a>
+                        {% if user.username != 'principal' %}
+                        <a href="{% url 'student_edit' s.id %}" class="btn-small">Edit</a>
+                        <a href="{% url 'payment_entry' s.id %}" class="btn-small btn-success">Pay</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No students found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if students.has_other_pages %}
+    <div class="pagination">
+        {% if students.has_previous %}
+            <a href="?page=1&q={{ query }}">First</a>
+            <a href="?page={{ students.previous_page_number }}&q={{ query }}">Previous</a>
+        {% endif %}
+        
+        <span>Page {{ students.number }} of {{ students.paginator.num_pages }}</span>
+        
+        {% if students.has_next %}
+            <a href="?page={{ students.next_page_number }}&q={{ query }}">Next</a>
+            <a href="?page={{ students.paginator.num_pages }}&q={{ query }}">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
+    </div>
 </div>
 
 <style>
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-.btn { display: inline-block; padding: 8px 16px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; }
+.card { background: white; padding: 20px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; }
 .btn-primary { background: #1e3c72; }
-.btn-small { display: inline-block; padding: 4px 8px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; margin: 0 2px; }
+.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; margin: 0 2px; }
 .btn-success { background: #28a745; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
 .table th { background: #f5f5f5; }
+.actions { white-space: nowrap; }
+.pagination { margin-top: 20px; text-align: center; }
+.pagination a { margin: 0 5px; padding: 5px 10px; background: #f5f5f5; text-decoration: none; }
 </style>
 {% endblock %}

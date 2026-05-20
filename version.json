@@ -1,0 +1,10 @@
+﻿{
+    "version": "1.0",
+    "release_date": "2026-05-17",
+    "changes": [
+        "Initial release",
+        "Student Management",
+        "Fee Collection",
+        "Payroll System"
+    ]
+}

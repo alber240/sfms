@@ -1,112 +1,168 @@
-﻿{% extends 'base.html' %}
-
-{% block title %}Principal Dashboard - SFMS{% endblock %}
-
-{% block content %}
-<div class="container">
-    <div class="readonly-banner" style="background: #e3f2fd; padding: 10px 20px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
-        <span style="color: #1e3c72;">📖 READ-ONLY MODE - You can view data but cannot make changes</span>
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Principal Portal - SFMS (Read Only)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fb;
+            padding: 16px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 22px; margin-bottom: 5px; }
+        .header p { opacity: 0.8; font-size: 13px; }
+        .readonly-badge {
+            background: #ffc107;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .stat-card h3 { font-size: 11px; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .number { font-size: 28px; font-weight: bold; color: #1e3c72; }
+        .stat-card small { font-size: 11px; color: #999; }
+        .receipt-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .receipt-card h3 { margin-bottom: 12px; color: #1e3c72; font-size: 16px; }
+        .receipt-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .receipt-item:last-child { border-bottom: none; }
+        .receipt-student { font-weight: 500; }
+        .receipt-student small { font-size: 11px; color: #999; display: block; }
+        .receipt-amount { font-weight: bold; color: #28a745; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 11px;
+        }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .nav-links {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .header h1 { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="readonly-badge">📖 READ-ONLY ACCESS - NO CHANGES CAN BE MADE</div>
+        <h1>🏫 School Financial Management</h1>
+        <p>Principal Dashboard - {{ today|date:"l, F j, Y" }}</p>
+        <div class="nav-links">
+            <a href="/students/">📋 View Students</a>
+            <a href="/reports/">📊 Reports</a>
+        </div>
+        <div>
+            <a href="/logout/" class="logout-btn">Logout</a>
+            <button onclick="location.reload()" class="refresh-btn">🔄 Refresh</button>
+        </div>
     </div>
     
-    <h1>🏫 Principal Dashboard</h1>
-    <p>Welcome, {{ user.username }}! Here's the school's financial summary.</p>
-    
-    <!-- Key Metrics -->
-    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0;">
-        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+    <div class="stats-grid">
+        <div class="stat-card">
             <h3>Today's Collections</h3>
-            <div class="amount" style="font-size: 28px; font-weight: bold; color: #28a745;">{{ total_collected_lrd|floatformat:0 }} LRD</div>
-            <div>{{ total_collected_usd|floatformat:2 }} USD</div>
+            <div class="number">{{ today_collected|floatformat:0 }} LRD</div>
         </div>
-        
-        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
-            <h3>This Month's Collections</h3>
-            <div class="amount" style="font-size: 28px; font-weight: bold; color: #1e3c72;">{{ monthly_collected_lrd|floatformat:0 }} LRD</div>
-            <div>{{ monthly_collected_usd|floatformat:2 }} USD</div>
+        <div class="stat-card">
+            <h3>This Month</h3>
+            <div class="number">{{ month_collected|floatformat:0 }} LRD</div>
         </div>
-        
-        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+        <div class="stat-card">
             <h3>Students with Balance</h3>
-            <div class="amount" style="font-size: 28px; font-weight: bold; color: {% if students_with_balance > 0 %}#dc3545{% else %}#28a745{% endif %};">{{ students_with_balance }}</div>
-            <div>out of {{ total_students }} total students</div>
-        </div>
-        
-        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
-            <h3>Overdue Payments</h3>
-            <div class="amount" style="font-size: 28px; font-weight: bold; color: {% if overdue_reminders > 0 %}#dc3545{% else %}#28a745{% endif %};">{{ overdue_reminders }}</div>
-            <div>students with overdue installments</div>
+            <div class="number">{{ students_with_balance }}</div>
+            <small>out of {{ total_students }}</small>
         </div>
     </div>
     
-    <!-- Recent Transactions -->
-    <div class="recent-section" style="background: white; padding: 20px; border-radius: 10px; margin-top: 20px;">
-        <h3>Recent Transactions</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Receipt #</th>
-                    <th>Student</th>
-                    <th>Amount</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for receipt in recent_receipts %}
-                <tr>
-                    <td>#{{ receipt.receipt_number }}</a></td>
-                    <td>{{ receipt.student.full_name }} ({{ receipt.student.admission_number }})</a></td>
-                    <td>
-                        {% if receipt.amount_lrd > 0 %}{{ receipt.amount_lrd }} LRD{% endif %}
-                        {% if receipt.amount_lrd > 0 and receipt.amount_usd > 0 %} + {% endif %}
-                        {% if receipt.amount_usd > 0 %}{{ receipt.amount_usd }} USD{% endif %}
-                     </a>
-                    </td>
-                    <td>{{ receipt.payment_date|date:"Y-m-d" }}</a></td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" style="text-align: center;">No receipts yet</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="receipt-card">
+        <h3>📋 Recent Payments</h3>
+        {% for receipt in recent_receipts %}
+        <div class="receipt-item">
+            <div class="receipt-student">
+                {{ receipt.student.full_name }}
+                <small>Receipt #{{ receipt.receipt_number }} | {{ receipt.payment_date|date:"M d, Y" }}</small>
+            </div>
+            <div class="receipt-amount">{{ receipt.amount_lrd|floatformat:0 }} LRD</div>
+        </div>
+        {% empty %}
+        <p style="text-align: center; color: #999; padding: 20px;">No recent payments</p>
+        {% endfor %}
     </div>
     
-    <!-- Quick Links -->
-    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="/reports/daily-cash/" class="btn btn-primary">📊 Daily Cash Report</a>
-        <a href="/reports/weekly-collections/" class="btn btn-primary">📈 Weekly Collections</a>
-        <a href="/reports/termly-summary/" class="btn btn-primary">📅 Termly Summary</a>
-        <a href="/students/" class="btn btn-info">👨‍🎓 View Students</a>
+    <div class="footer">
+        <p>SFMS - Liberia Edition | Read-Only Portal</p>
+        <p style="margin-top: 5px;">Contact accountant for payments and edits</p>
     </div>
-</div>
-
-<style>
-.btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background: #6c757d;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-}
-.btn-primary {
-    background: #1e3c72;
-}
-.btn-info {
-    background: #17a2b8;
-}
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.table th, .table td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-.table th {
-    background: #f5f5f5;
-}
-</style>
-{% endblock %}
+</body>
+</html>

@@ -14,6 +14,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
         .navbar h2 { font-size: 24px; }
         .navbar a {
@@ -24,6 +25,11 @@
             border-radius: 5px;
         }
         .navbar a:hover { background: rgba(255,255,255,0.2); }
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
         .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
         .welcome {
             background: white;
@@ -73,6 +79,8 @@
         .btn-primary .desc { color: rgba(255,255,255,0.8); }
         .btn-danger { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); color: white; }
         .btn-success { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); color: white; }
+        .btn-info { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%); color: white; }
         .table {
             width: 100%;
             background: white;
@@ -96,13 +104,14 @@
             .container { padding: 15px; }
             .buttons { grid-template-columns: 1fr; }
             .stats { grid-template-columns: 1fr; }
+            .navbar { flex-direction: column; gap: 10px; }
         }
     </style>
 </head>
 <body>
     <div class="navbar">
-        <h2>ðŸ« School Financial Management System</h2>
-        <div>
+        <h2>🏫 School Financial Management System</h2>
+        <div class="navbar-right">
             <span>Welcome, {{ user.username }}</span>
             <a href="/logout/">Logout</a>
         </div>
@@ -114,7 +123,7 @@
             <p>Your complete school financial management solution for Liberia</p>
         </div>
         
-                <div class="stats">
+        <div class="stats">
             <div class="stat-card">
                 <h3>Today's Collections</h3>
                 <div class="amount">{{ total_collected_lrd|floatformat:0 }} LRD</div>
@@ -131,52 +140,69 @@
                 <div>{{ net_usd|floatformat:2 }} USD</div>
                 <small>Combined equivalent: {{ net_combined|floatformat:0 }} LRD</small>
             </div>
-        </div>    
+        </div>
+        
         <div class="buttons">
             <a href="/receipts/quick/" class="btn btn-primary">
-                <div class="icon">ðŸ’°</div>
+                <div class="icon">💰</div>
                 <div class="title">Record Payment</div>
                 <div class="desc">Collect fees & print receipt</div>
             </a>
+            
             <a href="/students/" class="btn">
-                <div class="icon">ðŸ‘¨â€ðŸŽ“</div>
+                <div class="icon">👨‍🎓</div>
                 <div class="title">Manage Students</div>
                 <div class="desc">Add, edit, promote students</div>
             </a>
+            
             <a href="/expenses/add/" class="btn btn-danger">
-                <div class="icon">ðŸ’³</div>
+                <div class="icon">💳</div>
                 <div class="title">Record Expense</div>
                 <div class="desc">Money out with receipt photo</div>
             </a>
-           <a href="/settings/" class="btn">
-    <div class="icon">âš™ï¸</div>
-    <div class="title">Settings</div>
-    <div class="desc">Fees, classes, staff</div>
-</a>
-            <a href="/reports" class="btn btn-success">
-                <div class="icon">ðŸ“ˆ</div>
+            
+            <a href="/settings/" class="btn">
+                <div class="icon">⚙️</div>
+                <div class="title">Settings</div>
+                <div class="desc">Fees, classes, staff</div>
+            </a>
+            
+            <a href="/reports/" class="btn btn-success">
+                <div class="icon">📈</div>
                 <div class="title">Reports</div>
                 <div class="desc">Daily, weekly, termly</div>
             </a>
+            
             <a href="/inventory/" class="btn">
-    <div class="icon">📦</div>
-    <div class="title">Inventory</div>
-    <div class="desc">Track stationery & books</div>
-</a>
-
+                <div class="icon">📦</div>
+                <div class="title">Inventory</div>
+                <div class="desc">Track stationery & books</div>
+            </a>
+            
             <a href="/receipts/batch/" class="btn btn-info">
                 <div class="icon">📝</div>
                 <div class="title">Batch Payment</div>
                 <div class="desc">Record multiple payments at once</div>
             </a>
-
-             <a href="/payroll/" class="btn btn-info">
+            
+            <a href="/payroll/" class="btn btn-info">
                 <div class="icon">👥</div>
                 <div class="title">Payroll</div>
                 <div class="desc">Staff salaries & advances</div>
             </a>
+            
+            <a href="/cloud-sync/" class="btn btn-info">
+                <div class="icon">☁️</div>
+                <div class="title">Cloud Sync</div>
+                <div class="desc">Backup to cloud</div>
+            </a>
+            
+            <a href="/backup/" class="btn btn-warning">
+                <div class="icon">💾</div>
+                <div class="title">Backup</div>
+                <div class="desc">Backup to USB</div>
+            </a>
         </div>
-          
         
         <div class="recent-section">
             <h3>Recent Transactions</h3>
@@ -192,18 +218,18 @@
                 <tbody>
                     {% for receipt in recent_receipts %}
                     <tr>
-                        <td>#{{ receipt.receipt_number }}</td>
-                        <td>{{ receipt.student.full_name }}</td>
+                        <td>#{{ receipt.receipt_number }}</a></td>
+                        <td>{{ receipt.student.full_name }}</a></td>
                         <td>
                             {% if receipt.amount_lrd > 0 %}{{ receipt.amount_lrd }} LRD{% endif %}
                             {% if receipt.amount_lrd > 0 and receipt.amount_usd > 0 %} + {% endif %}
                             {% if receipt.amount_usd > 0 %}{{ receipt.amount_usd }} USD{% endif %}
-                        </td>
-                        <td>{{ receipt.payment_date|date:"Y-m-d" }}</td>
+                         </a></td>
+                        <td>{{ receipt.payment_date|date:"Y-m-d" }}</a></td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" style="text-align: center;">No receipts yet</td>
+                        <td colspan="4" style="text-align: center;">No receipts yet</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -212,7 +238,3 @@
     </div>
 </body>
 </html>
-
-
-
-
