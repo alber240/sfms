@@ -1,0 +1,64 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Overpayment Warning - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 50px auto; text-align: center;">
+        <h1 style="color: #dc3545;">⚠️ Overpayment Warning</h1>
+        
+        <div style="margin: 20px 0; padding: 20px; background: #fff3cd; border-radius: 10px;">
+            <p><strong>Student:</strong> {{ student.full_name }}</p>
+            <p><strong>Fee Category:</strong> {{ category.name }}</p>
+            <p><strong>Amount Due:</strong> {{ due_amount|floatformat:2 }} LRD</p>
+            <p><strong>Amount Entered:</strong> {{ entered_amount|floatformat:2 }} LRD</p>
+            <p><strong>Overpayment:</strong> <span style="color: #dc3545;">{{ overpayment|floatformat:2 }} LRD</span></p>
+        </div>
+        
+        <p>What would you like to do with the overpayment?</p>
+        
+        <form method="post" action="{% url 'handle_overpayment' %}" style="margin-top: 20px;">
+            {% csrf_token %}
+            <input type="hidden" name="student_id" value="{{ student.id }}">
+            <input type="hidden" name="category_id" value="{{ category.id }}">
+            <input type="hidden" name="amount" value="{{ entered_amount }}">
+            <input type="hidden" name="payment_period" value="{{ payment_period }}">
+            
+            <div class="form-group" style="text-align: left;">
+                <label>
+                    <input type="radio" name="overpayment_action" value="next_fee" checked>
+                    Apply extra to next fee (Tuition)
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="overpayment_action" value="credit">
+                    Record as credit for future payments
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="overpayment_action" value="refund">
+                    Refund to parent (record as credit note)
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="overpayment_action" value="correct">
+                    Go back and correct amount
+                </label>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Continue</button>
+                <a href="{% url 'payment_entry' student.id %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
+.btn-primary { background: #1e3c72; }
+.form-group { margin: 20px 0; }
+label { display: block; margin: 10px 0; cursor: pointer; }
+</style>
+{% endblock %}

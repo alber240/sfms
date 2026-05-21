@@ -114,51 +114,136 @@ def student_add(request):
 
 @login_required
 def student_detail(request, pk):
+    from fees.models import FeeCategory, FeeStructure, StudentFeeLedger
+    from receipts.models import Receipt, PaymentAllocation
+    from decimal import Decimal
+    
     student = get_object_or_404(Student, pk=pk)
     
-    # Get fee ledger for this student (most recent)
-    ledger = StudentFeeLedger.objects.filter(student=student).first()
+    # Get active fee categories
+    fee_categories = FeeCategory.objects.filter(is_active=True)
     
-    # Calculate balances
-    if ledger:
-        semester1_balance_lrd = ledger.semester1_total_lrd - ledger.semester1_paid_lrd
-        semester1_balance_usd = ledger.semester1_total_usd - ledger.semester1_paid_usd
-        semester2_balance_lrd = ledger.semester2_total_lrd - ledger.semester2_paid_lrd
-        semester2_balance_usd = ledger.semester2_total_usd - ledger.semester2_paid_usd
-        total_balance_lrd = semester1_balance_lrd + semester2_balance_lrd
-        total_balance_usd = semester1_balance_usd + semester2_balance_usd
-        total_due_lrd = (ledger.semester1_total_lrd + ledger.semester2_total_lrd)
-        total_due_usd = (ledger.semester1_total_usd + ledger.semester2_total_usd)
-    else:
-        semester1_balance_lrd = 0
-        semester1_balance_usd = 0
-        semester2_balance_lrd = 0
-        semester2_balance_usd = 0
-        total_balance_lrd = 0
-        total_balance_usd = 0
-        total_due_lrd = 0
-        total_due_usd = 0
+    # Get current academic year
+    from fees.views import get_active_academic_year
+    academic_year = get_active_academic_year()
     
-    # Get all receipts
+    # Get fee structure for this student
+    fee_structures = FeeStructure.objects.filter(
+        class_assigned=student.class_assigned,
+        academic_year=academic_year,
+        student_type=student.student_type,
+        is_active=True
+    ).select_related('category')
+    
+    # Build fee breakdown with semester data
+    fee_breakdown = []
+    total_sem1_due_lrd = Decimal('0')
+    total_sem1_paid_lrd = Decimal('0')
+    total_sem2_due_lrd = Decimal('0')
+    total_sem2_paid_lrd = Decimal('0')
+    total_due_lrd = Decimal('0')
+    total_paid_lrd = Decimal('0')
+    
+    # Get all receipts for this student
     receipts = Receipt.objects.filter(student=student, is_voided=False).order_by('-payment_date')
     
-    # Calculate total paid
-    total_paid_lrd = receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
-    total_paid_usd = receipts.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+    for category in fee_categories:
+        # Get fee structure for this category
+        fs = fee_structures.filter(category=category).first()
+        
+        if fs:
+            # Semester 1 amounts
+            sem1_due_lrd = fs.semester1_amount_lrd
+            sem1_due_usd = fs.semester1_amount_usd
+            
+            # Semester 2 amounts
+            sem2_due_lrd = fs.semester2_amount_lrd
+            sem2_due_usd = fs.semester2_amount_usd
+            
+            # Calculate paid amounts from allocations
+            sem1_paid_lrd = Decimal('0')
+            sem1_paid_usd = Decimal('0')
+            sem2_paid_lrd = Decimal('0')
+            sem2_paid_usd = Decimal('0')
+            
+            for receipt in receipts:
+                if not receipt.is_legacy:
+                    allocations = receipt.allocations.filter(fee_category=category)
+                    for alloc in allocations:
+                        # Check payment period from receipt
+                        if receipt.payment_period == 'FIRST':
+                            sem1_paid_lrd += alloc.amount_lrd
+                            sem1_paid_usd += alloc.amount_usd
+                        elif receipt.payment_period == 'SECOND':
+                            sem2_paid_lrd += alloc.amount_lrd
+                            sem2_paid_usd += alloc.amount_usd
+                        else:  # YEARLY - split equally
+                            sem1_paid_lrd += alloc.amount_lrd / 2
+                            sem2_paid_lrd += alloc.amount_lrd / 2
+                            sem1_paid_usd += alloc.amount_usd / 2
+                            sem2_paid_usd += alloc.amount_usd / 2
+            
+            total_due_category = sem1_due_lrd + sem2_due_lrd
+            total_paid_category = sem1_paid_lrd + sem2_paid_lrd
+            
+            # Determine semester statuses
+            sem1_status = 'paid' if sem1_paid_lrd >= sem1_due_lrd and sem1_due_lrd > 0 else ('partial' if sem1_paid_lrd > 0 else 'pending')
+            sem2_status = 'paid' if sem2_paid_lrd >= sem2_due_lrd and sem2_due_lrd > 0 else ('partial' if sem2_paid_lrd > 0 else 'pending')
+            
+            fee_breakdown.append({
+                'category': category,
+                'sem1_due_lrd': float(sem1_due_lrd),
+                'sem1_due_usd': float(sem1_due_usd),
+                'sem1_paid_lrd': float(sem1_paid_lrd),
+                'sem1_paid_usd': float(sem1_paid_usd),
+                'sem1_status': sem1_status,
+                'sem2_due_lrd': float(sem2_due_lrd),
+                'sem2_due_usd': float(sem2_due_usd),
+                'sem2_paid_lrd': float(sem2_paid_lrd),
+                'sem2_paid_usd': float(sem2_paid_usd),
+                'sem2_status': sem2_status,
+                'total_due_lrd': float(total_due_category),
+                'total_paid_lrd': float(total_paid_category),
+            })
+            
+            total_sem1_due_lrd += sem1_due_lrd
+            total_sem1_paid_lrd += sem1_paid_lrd
+            total_sem2_due_lrd += sem2_due_lrd
+            total_sem2_paid_lrd += sem2_paid_lrd
+            total_due_lrd += total_due_category
+            total_paid_lrd += total_paid_category
+        else:
+            # No fee structure for this category
+            fee_breakdown.append({
+                'category': category,
+                'sem1_due_lrd': 0,
+                'sem1_due_usd': 0,
+                'sem1_paid_lrd': 0,
+                'sem1_paid_usd': 0,
+                'sem1_status': 'none',
+                'sem2_due_lrd': 0,
+                'sem2_due_usd': 0,
+                'sem2_paid_lrd': 0,
+                'sem2_paid_usd': 0,
+                'sem2_status': 'none',
+                'total_due_lrd': 0,
+                'total_paid_lrd': 0,
+            })
+    
+    total_balance_lrd = total_due_lrd - total_paid_lrd
+    total_balance_usd = 0  # Calculate similarly if needed
     
     context = {
         'student': student,
-        'current_balance_lrd': total_balance_lrd,
-        'current_balance_usd': total_balance_usd,
-        'total_due_lrd': total_due_lrd,
-        'total_due_usd': total_due_usd,
-        'total_paid_lrd': total_paid_lrd,
-        'total_paid_usd': total_paid_usd,
+        'fee_breakdown': fee_breakdown,
         'receipts': receipts,
-        'semester1_balance_lrd': semester1_balance_lrd,
-        'semester1_balance_usd': semester1_balance_usd,
-        'semester2_balance_lrd': semester2_balance_lrd,
-        'semester2_balance_usd': semester2_balance_usd,
+        'total_due_lrd': float(total_due_lrd),
+        'total_paid_lrd': float(total_paid_lrd),
+        'total_balance_lrd': float(total_balance_lrd),
+        'total_sem1_due_lrd': float(total_sem1_due_lrd),
+        'total_sem1_paid_lrd': float(total_sem1_paid_lrd),
+        'total_sem2_due_lrd': float(total_sem2_due_lrd),
+        'total_sem2_paid_lrd': float(total_sem2_paid_lrd),
     }
     return render(request, 'students/detail.html', context)
 

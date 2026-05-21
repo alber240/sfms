@@ -160,6 +160,14 @@
             <span>{{ receipt.mobile_transaction_id }}</span>
         </div>
         {% endif %}
+                <div class="info-row">
+            <span><strong>Fee Type:</strong></span>
+            <span>
+                {% for alloc in receipt.allocations.all %}
+                    {{ alloc.fee_category.name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </span>
+        </div>
         
         {% if receipt.fee_category %}
         <div class="info-row">

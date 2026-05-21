@@ -77,17 +77,13 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
+                                        <div class="form-group">
                         <label>Fee Category (For all students):</label>
                         <select name="fee_category" required class="form-control">
                             <option value="">-- Select Fee Category --</option>
-                            <option value="TUITION">Tuition</option>
-                            <option value="REGISTRATION">Registration</option>
-                            <option value="LABORATORY">Laboratory</option>
-                            <option value="PTA">PTA</option>
-                            <option value="DEVELOPMENT">Development</option>
-                            <option value="SPORTS">Sports</option>
-                            <option value="OTHER">Other</option>
+                            {% for category in fee_categories %}
+                            <option value="{{ category.id }}">{{ category.name }} ({{ category.code }})</option>
+                            {% endfor %}
                         </select>
                         <small>Select which fee this payment is for</small>
                     </div>

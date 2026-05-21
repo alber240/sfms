@@ -5,7 +5,9 @@ from django.db import models
 from django.db.models import Q
 from datetime import date
 from decimal import Decimal
+from fees.models import FeeCategory
 
+from fees.views import get_active_academic_year
 from students.models import Student
 from fees.models import StudentFeeLedger
 from .models import Receipt, ReceiptSequence, BatchPaymentSession
@@ -26,41 +28,113 @@ from .models import Receipt
 
 @login_required
 def payment_entry(request, student_id=None):
-    from fees.models import StudentFeeLedger
-    from fees.views import get_active_academic_year
+    from decimal import Decimal
+    from fees.models import FeeCategory, FeeStructure
+    from .models import PaymentAllocation
     
     student = None
-    balance_lrd = 0
-    balance_usd = 0
-    total_due_lrd = 0
-    total_due_usd = 0
+    fee_categories = []
     
     if student_id:
         student = get_object_or_404(Student, id=student_id)
         academic_year = get_active_academic_year()
         
-        # Get current balance from fee ledger
-        ledger = StudentFeeLedger.objects.filter(student=student, academic_year=academic_year).first()
-        if ledger:
-            # Calculate remaining balance (total - paid)
-            balance_lrd = (ledger.semester1_total_lrd + ledger.semester2_total_lrd) - (ledger.semester1_paid_lrd + ledger.semester2_paid_lrd)
-            balance_usd = (ledger.semester1_total_usd + ledger.semester2_total_usd) - (ledger.semester1_paid_usd + ledger.semester2_paid_usd)
-            total_due_lrd = ledger.semester1_total_lrd + ledger.semester2_total_lrd
-            total_due_usd = ledger.semester1_total_usd + ledger.semester2_total_usd
-    
-    # ... rest of the function ...
+        # Get fee structure for this student
+        fee_structures = FeeStructure.objects.filter(
+            class_assigned=student.class_assigned,
+            academic_year=academic_year,
+            student_type=student.student_type,
+            is_active=True
+        ).select_related('category')
+        
+        for fs in fee_structures:
+            due_lrd = fs.semester1_amount_lrd + fs.semester2_amount_lrd
+            due_usd = fs.semester1_amount_usd + fs.semester2_amount_usd
+            
+            # Calculate paid amount for this category
+            paid_lrd = Decimal('0')
+            paid_usd = Decimal('0')
+            receipts = Receipt.objects.filter(student=student, is_voided=False, is_legacy=False)
+            for receipt in receipts:
+                allocations = receipt.allocations.filter(fee_category=fs.category)
+                paid_lrd += sum(a.amount_lrd for a in allocations)
+                paid_usd += sum(a.amount_usd for a in allocations)
+            
+            balance_lrd = due_lrd - paid_lrd
+            balance_usd = due_usd - paid_usd
+            
+            fee_categories.append({
+                'id': fs.category.id,
+                'name': fs.category.name,
+                'code': fs.category.code,
+                'due_lrd': float(due_lrd),
+                'due_usd': float(due_usd),
+                'paid_lrd': float(paid_lrd),
+                'paid_usd': float(paid_usd),
+                'balance_lrd': float(max(balance_lrd, 0)),
+                'balance_usd': float(max(balance_usd, 0)),
+            })
     
     if request.method == 'POST':
         student_id = request.POST.get('student_id')
         student = get_object_or_404(Student, id=student_id)
         payment_period = request.POST.get('payment_period', 'FIRST')
-        
+        # FIX: Get the fee_category_id as integer
+        fee_category_id = request.POST.get('fee_category')
         amount_lrd = Decimal(request.POST.get('amount_lrd', '0') or '0')
         amount_usd = Decimal(request.POST.get('amount_usd', '0') or '0')
         
-        if amount_lrd == 0 and amount_usd == 0:
-            messages.error(request, 'Please enter an amount in LRD or USD')
+        # Validate fee_category_id is a number
+        try:
+            fee_category_id = int(fee_category_id)
+        except (ValueError, TypeError):
+            messages.error(request, 'Please select a valid fee category')
             return redirect('payment_entry', student_id=student.id)
+        
+        # Get the selected fee category
+        selected_category = get_object_or_404(FeeCategory, id=fee_category_id)
+        academic_year = get_active_academic_year()
+        
+        fee_structure = FeeStructure.objects.filter(
+            class_assigned=student.class_assigned,
+            academic_year=academic_year,
+            student_type=student.student_type,
+            category=selected_category,
+            is_active=True
+        ).first()
+        
+        if fee_structure:
+            if payment_period == 'FIRST':
+                due_for_category = fee_structure.semester1_amount_lrd
+                due_for_category_usd = fee_structure.semester1_amount_usd
+            elif payment_period == 'SECOND':
+                due_for_category = fee_structure.semester2_amount_lrd
+                due_for_category_usd = fee_structure.semester2_amount_usd
+            else:  # YEARLY
+                due_for_category = fee_structure.semester1_amount_lrd + fee_structure.semester2_amount_lrd
+                due_for_category_usd = fee_structure.semester1_amount_usd + fee_structure.semester2_amount_usd
+            
+            # Calculate already paid for this category
+            already_paid = Decimal('0')
+            receipts = Receipt.objects.filter(student=student, is_voided=False, is_legacy=False)
+            for receipt in receipts:
+                allocations = receipt.allocations.filter(fee_category=selected_category)
+                already_paid += sum(a.amount_lrd for a in allocations)
+            
+            remaining_due = due_for_category - already_paid
+            
+            # Check for overpayment
+            if amount_lrd > remaining_due and remaining_due > 0:
+                overpayment = amount_lrd - remaining_due
+                messages.warning(request, f'⚠️ Overpayment Warning: {selected_category.name} fee is {remaining_due} LRD. You entered {amount_lrd} LRD (Overpayment of {overpayment} LRD).')
+                return render(request, 'receipts/overpayment_warning.html', {
+                    'student': student,
+                    'category': selected_category,
+                    'due_amount': remaining_due,
+                    'entered_amount': amount_lrd,
+                    'overpayment': overpayment,
+                    'payment_period': payment_period,
+                })
         
         # Create receipt
         receipt = Receipt.objects.create(
@@ -70,44 +144,37 @@ def payment_entry(request, student_id=None):
             amount_usd=amount_usd,
             payment_method=request.POST.get('payment_method', 'CASH'),
             mobile_transaction_id=request.POST.get('mobile_transaction_id', ''),
+            is_legacy=False,
+            payment_period=payment_period,
         )
         
-        # Update student fee ledger based on payment period
-        ledger = StudentFeeLedger.objects.filter(student=student).first()
-        
-        if ledger:
-            if payment_period == 'FIRST':
-                ledger.semester1_paid_lrd += amount_lrd
-                ledger.semester1_paid_usd += amount_usd
-            elif payment_period == 'SECOND':
-                ledger.semester2_paid_lrd += amount_lrd
-                ledger.semester2_paid_usd += amount_usd
-            else:  # YEARLY - split between semesters based on actual fee structure
-                total_sem1 = float(ledger.semester1_total_lrd)
-                total_sem2 = float(ledger.semester2_total_lrd)
-                total = total_sem1 + total_sem2
-                if total > 0:
-                    ratio = Decimal(str(total_sem1 / total))
-                else:
-                    ratio = Decimal('0.5')
-                
-                ledger.semester1_paid_lrd += amount_lrd * ratio
-                ledger.semester2_paid_lrd += amount_lrd * (Decimal('1') - ratio)
-                ledger.semester1_paid_usd += amount_usd * ratio
-                ledger.semester2_paid_usd += amount_usd * (Decimal('1') - ratio)
-            
-            ledger.last_payment_date = date.today()
-            ledger.save()
+        # Create allocation
+        PaymentAllocation.objects.create(
+            receipt=receipt,
+            fee_category=selected_category,
+            amount_lrd=amount_lrd,
+            amount_usd=amount_usd,
+        )
         
         messages.success(request, f'Receipt #{receipt.receipt_number} created successfully!')
         return redirect('receipt_print', receipt_id=receipt.id)
     
+    total_due_lrd = sum(f['due_lrd'] for f in fee_categories)
+    total_due_usd = sum(f['due_usd'] for f in fee_categories)
+    total_paid_lrd = sum(f['paid_lrd'] for f in fee_categories)
+    total_paid_usd = sum(f['paid_usd'] for f in fee_categories)
+    total_balance_lrd = total_due_lrd - total_paid_lrd
+    total_balance_usd = total_due_usd - total_paid_usd
+    
     context = {
         'student': student,
-        'balance_lrd': float(balance_lrd),
-        'balance_usd': float(balance_usd),
-        'total_due_lrd': float(total_due_lrd),
-        'total_due_usd': float(total_due_usd),
+        'fee_categories': fee_categories,
+        'total_due_lrd': total_due_lrd,
+        'total_due_usd': total_due_usd,
+        'total_paid_lrd': total_paid_lrd,
+        'total_paid_usd': total_paid_usd,
+        'total_balance_lrd': total_balance_lrd,
+        'total_balance_usd': total_balance_usd,
     }
     return render(request, 'receipts/payment.html', context)
 
@@ -172,7 +239,6 @@ def quick_payment(request):
 
 
 @login_required
-
 @login_required
 def batch_payment(request):
     """Record multiple students' payments at once"""
@@ -183,6 +249,7 @@ def batch_payment(request):
     selected_students = []
     payment_period = request.POST.get('payment_period', 'FIRST')
     academic_year = request.POST.get('academic_year', '2024-2025')
+    fee_categories = FeeCategory.objects.filter(is_active=True)
     
     # Handle search
     if request.method == 'POST' and 'search_btn' in request.POST:
@@ -320,8 +387,102 @@ def batch_payment(request):
         'payment_period': payment_period,
         'academic_year': academic_year,
         'available_years': ['2024-2025', '2025-2026', '2026-2027'],
+        'fee_categories': fee_categories,
     }
     return render(request, 'receipts/batch_payment.html', context)
+
+@login_required
+def handle_overpayment(request):
+    """Handle overpayment by applying extra to next fee or creating credit"""
+    from decimal import Decimal
+    from fees.models import FeeCategory, FeeStructure
+    from .models import Receipt, PaymentAllocation
+    
+    if request.method == 'POST':
+        student_id = request.POST.get('student_id')
+        category_id = request.POST.get('category_id')
+        amount = Decimal(request.POST.get('amount', '0'))
+        payment_period = request.POST.get('payment_period', 'FIRST')
+        action = request.POST.get('overpayment_action', 'next_fee')
+        
+        student = get_object_or_404(Student, id=student_id)
+        category = get_object_or_404(FeeCategory, id=category_id)
+        academic_year = get_active_academic_year()
+        
+        # Get fee structure for this category
+        fee_structure = FeeStructure.objects.filter(
+            class_assigned=student.class_assigned,
+            academic_year=academic_year,
+            student_type=student.student_type,
+            category=category,
+            is_active=True
+        ).first()
+        
+        if fee_structure:
+            if payment_period == 'FIRST':
+                due_for_category = fee_structure.semester1_amount_lrd
+            elif payment_period == 'SECOND':
+                due_for_category = fee_structure.semester2_amount_lrd
+            else:
+                due_for_category = fee_structure.semester1_amount_lrd + fee_structure.semester2_amount_lrd
+            
+            # Calculate already paid
+            already_paid = Decimal('0')
+            receipts = Receipt.objects.filter(student=student, is_voided=False, is_legacy=False)
+            for receipt in receipts:
+                allocations = receipt.allocations.filter(fee_category=category)
+                already_paid += sum(a.amount_lrd for a in allocations)
+            
+            remaining_due = due_for_category - already_paid
+            
+            # Amount to pay for this category (only the remaining due)
+            pay_amount = min(amount, remaining_due)
+            overpayment = amount - pay_amount
+            
+            # Create receipt
+            receipt = Receipt.objects.create(
+                student=student,
+                payment_date=date.today(),
+                amount_lrd=pay_amount,
+                amount_usd=0,
+                payment_method=request.POST.get('payment_method', 'CASH'),
+                is_legacy=False,
+            )
+            
+            # Allocation for this category
+            PaymentAllocation.objects.create(
+                receipt=receipt,
+                fee_category=category,
+                amount_lrd=pay_amount,
+                amount_usd=0,
+            )
+            
+            # Handle overpayment
+            if overpayment > 0:
+                if action == 'next_fee':
+                    # Apply to next fee category (Tuition)
+                    tuition_category = FeeCategory.objects.filter(code='TUI').first()
+                    if tuition_category:
+                        PaymentAllocation.objects.create(
+                            receipt=receipt,
+                            fee_category=tuition_category,
+                            amount_lrd=overpayment,
+                            amount_usd=0,
+                        )
+                        messages.info(request, f'✅ Payment recorded. {pay_amount} LRD applied to {category.name}. Extra {overpayment} LRD applied to Tuition.')
+                    else:
+                        messages.info(request, f'✅ Payment recorded. {pay_amount} LRD applied to {category.name}. Extra {overpayment} LRD recorded as credit.')
+                elif action == 'credit':
+                    # Record as credit (create a credit note)
+                    messages.info(request, f'✅ Payment recorded. {pay_amount} LRD applied to {category.name}. Extra {overpayment} LRD available as credit for future payments.')
+                else:  # refund or correct
+                    messages.info(request, f'✅ Payment recorded. {pay_amount} LRD applied to {category.name}. Extra {overpayment} LRD not applied.')
+            else:
+                messages.success(request, f'✅ Receipt #{receipt.receipt_number} created successfully!')
+            
+            return redirect('receipt_print', receipt_id=receipt.id)
+    
+    return redirect('dashboard')
 
 
 

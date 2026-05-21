@@ -70,20 +70,18 @@
         <input type="hidden" name="student_id" value="{{ student.id }}">
         
         <!-- Fee Category Selection -->
-        <div class="form-group">
-            <label>Fee Category *</label>
-            <select name="fee_category" required class="form-control">
-                <option value="">-- Select Fee Type --</option>
-                <option value="TUITION">Tuition</option>
-                <option value="REGISTRATION">Registration</option>
-                <option value="LABORATORY">Laboratory</option>
-                <option value="PTA">PTA</option>
-                <option value="DEVELOPMENT">Development</option>
-                <option value="SPORTS">Sports</option>
-                <option value="OTHER">Other</option>
-            </select>
-            <small>Select which fee this payment is for</small>
-        </div>
+                    <div class="form-group">
+                <label>Fee Category *</label>
+                <select name="fee_category" required class="form-control">
+                    <option value="">-- Select Fee Type --</option>
+                    {% for cat in fee_categories %}
+                    <option value="{{ cat.id }}">
+                        {{ cat.name }} ({{ cat.code }}) - Due: {{ cat.balance_lrd|floatformat:0 }} LRD
+                    </option>
+                    {% endfor %}
+                </select>
+                <small>Select which fee this payment is for</small>
+            </div>
         
         <div class="form-group">
             <label>Payment Period *</label>

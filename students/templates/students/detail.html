@@ -17,30 +17,132 @@
         </div>
     </div>
     
-    <!-- Rest of the template stays the same -->
+    <!-- Student Information Card -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
         
         <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
             <h3>Student Information</h3>
             <p><strong>Admission #:</strong> {{ student.admission_number }}</p>
             <p><strong>Class:</strong> {{ student.get_class_name }}</p>
-            <p><strong>Student Type:</strong> {{ student.get_student_type_display }}</p>
+            <p><strong>Student Type:</strong> 
+                {% if student.student_type == 'NEW' %}
+                    🆕 New Student (First time)
+                {% else %}
+                    🔄 Returning Student
+                {% endif %}
+            </p>
             <p><strong>Parent:</strong> {{ student.parent_name|default:"-" }}</p>
             <p><strong>Phone:</strong> {{ student.parent_phone|default:"-" }}</p>
             <p><strong>Enrollment Date:</strong> {{ student.enrollment_date|date:"Y-m-d" }}</p>
         </div>
         
-        <div class="card" style="background: {% if current_balance_lrd > 0 %}#ffebee{% else %}#e8f5e9{% endif %}; padding: 20px; border-radius: 10px;">
-            <h3>💰 Balance Summary</h3>
-            {% if current_balance_lrd == 0 and current_balance_usd == 0 %}
-                <p style="font-size: 24px; color: green; font-weight: bold;">✓ FULLY PAID</p>
-            {% else %}
-                <p style="font-size: 28px; font-weight: bold; color: #c62828;">{{ current_balance_lrd|floatformat:0 }} LRD</p>
-                <p>{{ current_balance_usd|floatformat:2 }} USD</p>
-                <p>Total Due: {{ total_due_lrd|floatformat:0 }} LRD</p>
-                <p>Total Paid: {{ total_paid_lrd|floatformat:0 }} LRD</p>
-            {% endif %}
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
+            <h3>💰 Summary</h3>
+            <p><strong>Total Due:</strong> {{ total_due_lrd|floatformat:0 }} LRD / {{ total_due_usd|floatformat:2 }} USD</p>
+            <p><strong>Total Paid:</strong> {{ total_paid_lrd|floatformat:0 }} LRD / {{ total_paid_usd|floatformat:2 }} USD</p>
+            <p><strong>Total Balance:</strong> 
+                <span style="color: {% if total_balance_lrd > 0 %}#c62828{% else %}#2e7d32{% endif %}; font-size: 20px; font-weight: bold;">
+                    {{ total_balance_lrd|floatformat:0 }} LRD
+                </span>
+            </p>
         </div>
+    </div>
+    
+    <!-- Semester-Based Fee Breakdown Table -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h3>💰 Fee Breakdown by Category & Semester</h3>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th rowspan="2">Fee Category</th>
+                    <th colspan="3">1st Semester</th>
+                    <th colspan="3">2nd Semester</th>
+                    <th rowspan="2">Total Due</th>
+                    <th rowspan="2">Total Paid</th>
+                    <th rowspan="2">Status</th>
+                </tr>
+                <tr style="background: #f0f0f0;">
+                    <th>Due (LRD)</th>
+                    <th>Paid (LRD)</th>
+                    <th>Status</th>
+                    <th>Due (LRD)</th>
+                    <th>Paid (LRD)</th>
+                    <th>Status</th>
+                 </tr>
+            </thead>
+            <tbody>
+                {% for fee in fee_breakdown %}
+                <tr>
+                    <td><strong>{{ fee.category.name }}</strong><br><small>{{ fee.category.code }}</small></a>
+                    <!-- Semester 1 -->
+                    <td>{{ fee.sem1_due_lrd|floatformat:2 }}</a>
+                    <td>{{ fee.sem1_paid_lrd|floatformat:2 }}</a>
+                    <td>
+                        {% if fee.sem1_paid_lrd >= fee.sem1_due_lrd and fee.sem1_due_lrd > 0 %}
+                            <span style="color: green;">✓ Paid</span>
+                        {% elif fee.sem1_paid_lrd > 0 %}
+                            <span style="color: orange;">⚠ Partial</span>
+                        {% elif fee.sem1_due_lrd > 0 %}
+                            <span style="color: red;">⏳ Pending</span>
+                        {% else %}
+                            <span style="color: #999;">-</span>
+                        {% endif %}
+                    </a>
+                    <!-- Semester 2 -->
+                    <td>{{ fee.sem2_due_lrd|floatformat:2 }}</a>
+                    <td>{{ fee.sem2_paid_lrd|floatformat:2 }}</a>
+                    <td>
+                        {% if fee.sem2_paid_lrd >= fee.sem2_due_lrd and fee.sem2_due_lrd > 0 %}
+                            <span style="color: green;">✓ Paid</span>
+                        {% elif fee.sem2_paid_lrd > 0 %}
+                            <span style="color: orange;">⚠ Partial</span>
+                        {% elif fee.sem2_due_lrd > 0 %}
+                            <span style="color: red;">⏳ Pending</span>
+                        {% else %}
+                            <span style="color: #999;">-</span>
+                        {% endif %}
+                    </a>
+                    <!-- Totals -->
+                    <td>{{ fee.total_due_lrd|floatformat:2 }}</a>
+                    <td>{{ fee.total_paid_lrd|floatformat:2 }}</a>
+                    <td>
+                        {% if fee.total_paid_lrd >= fee.total_due_lrd and fee.total_due_lrd > 0 %}
+                            <span style="color: green; font-weight: bold;">✓ Fully Paid</span>
+                        {% elif fee.total_paid_lrd > 0 %}
+                            <span style="color: orange; font-weight: bold;">⚠ Partial</span>
+                        {% elif fee.total_due_lrd > 0 %}
+                            <span style="color: red; font-weight: bold;">Pending</span>
+                        {% else %}
+                            <span style="color: #999;">N/A</span>
+                        {% endif %}
+                    </a>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot style="background: #f5f5f5; font-weight: bold;">
+                <tr>
+                    <td><strong>TOTAL</strong></a>
+                    <td><strong>{{ total_sem1_due_lrd|floatformat:2 }}</strong></a>
+                    <td><strong>{{ total_sem1_paid_lrd|floatformat:2 }}</strong></a>
+                    <td></a>
+                    <td><strong>{{ total_sem2_due_lrd|floatformat:2 }}</strong></a>
+                    <td><strong>{{ total_sem2_paid_lrd|floatformat:2 }}</strong></a>
+                    <td></a>
+                    <td><strong>{{ total_due_lrd|floatformat:2 }}</strong></a>
+                    <td><strong>{{ total_paid_lrd|floatformat:2 }}</strong></a>
+                    <td>
+                        {% if total_balance_lrd == 0 %}
+                            <span style="color: green;">✓ Fully Paid</span>
+                        {% elif total_paid_lrd > 0 %}
+                            <span style="color: orange;">⚠ Partial</span>
+                        {% else %}
+                            <span style="color: red;">Pending</span>
+                        {% endif %}
+                    </a>
+                </tr>
+            </tfoot>
+        </table>
     </div>
     
     <!-- Payment History -->
@@ -52,8 +154,9 @@
                 <tr>
                     <th>Receipt #</th>
                     <th>Date</th>
+                    <th>Semester</th>
+                    <th>Fee Category</th>
                     <th>Amount (LRD)</th>
-                    <th>Amount (USD)</th>
                     <th>Method</th>
                     <th>Print</th>
                 </tr>
@@ -61,12 +164,25 @@
             <tbody>
                 {% for receipt in receipts %}
                 <tr>
-                    <td>#{{ receipt.receipt_number }}</a></td>
-                    <td>{{ receipt.payment_date|date:"Y-m-d" }}</a></td>
-                    <td>{{ receipt.amount_lrd|floatformat:2 }}</a></td>
-                    <td>{{ receipt.amount_usd|floatformat:2 }}</a></td>
-                    <td>{{ receipt.get_payment_method_display }}</a></td>
-                    <td><a href="{% url 'receipt_print' receipt.id %}" target="_blank" class="btn-small">🖨️ Print</a></a></td>
+                    <td>#{{ receipt.receipt_number }}</a>
+                    <td>{{ receipt.payment_date|date:"Y-m-d" }}</a>
+                    <td>
+                        {% if receipt.payment_period == 'FIRST' %}
+                            1st Semester
+                        {% elif receipt.payment_period == 'SECOND' %}
+                            2nd Semester
+                        {% else %}
+                            Yearly
+                        {% endif %}
+                    </a>
+                    <td>
+                        {% for alloc in receipt.allocations.all %}
+                            {{ alloc.fee_category.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </a>
+                    <td>{{ receipt.amount_lrd|floatformat:2 }}</a>
+                    <td>{{ receipt.get_payment_method_display }}</a>
+                    <td><a href="{% url 'receipt_print' receipt.id %}" target="_blank" class="btn-small">🖨️ Print</a></a>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -90,7 +206,8 @@
 .btn-success { background: #28a745; }
 .btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; }
 .table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-.table th { background: #f5f5f5; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
+.table th { background: #f5f5f5; font-weight: bold; }
+tfoot td { border-top: 2px solid #ddd; background: #f5f5f5; }
 </style>
 {% endblock %}

@@ -7,4 +7,5 @@ urlpatterns = [
     path('quick/', views.quick_payment, name='quick_payment'),
     path('print/<int:receipt_id>/', views.receipt_print, name='receipt_print'),
     path('batch/', views.batch_payment, name='batch_payment'),
+    path('handle-overpayment/', views.handle_overpayment, name='handle_overpayment'),
 ]
