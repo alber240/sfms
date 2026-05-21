@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from datetime import date
-from .models import Staff, StaffAdvance, PayrollPeriod, PayrollEntry, PayrollReceipt
+from .models import Staff, StaffAdvance, PayrollPeriod, PayrollEntry, PayrollReceipt, StaffAttendance, StaffPerformanceReview
 
 @login_required
 def staff_list(request):
@@ -480,3 +480,167 @@ def staff_payroll_history(request, staff_id):
         'total_deductions_usd': total_deductions_usd,
     }
     return render(request, 'payroll/staff_payroll_history.html', context)
+
+@login_required
+def staff_performance_dashboard(request):
+    """Dashboard for staff performance metrics"""
+    from datetime import datetime
+    from django.db.models import Sum, Count, Avg
+    from .models import Staff, StaffAttendance, PayrollEntry
+    
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+    
+    # Get all active staff
+    staff_members = Staff.objects.filter(is_active=True)
+    
+    # Calculate attendance summary
+    attendance_summary = []
+    for staff in staff_members:
+        attendance = StaffAttendance.objects.filter(staff=staff, year=current_year)
+        total_present = attendance.aggregate(Sum('days_present'))['days_present__sum'] or 0
+        total_absent = attendance.aggregate(Sum('days_absent'))['days_absent__sum'] or 0
+        total_late = attendance.aggregate(Sum('days_late'))['days_late__sum'] or 0
+        total_days = total_present + total_absent
+        
+        attendance_percentage = (total_present / total_days * 100) if total_days > 0 else 0
+        
+        attendance_summary.append({
+            'staff': staff,
+            'present': total_present,
+            'absent': total_absent,
+            'late': total_late,
+            'percentage': attendance_percentage,
+        })
+    
+    # Calculate payroll summary
+    payroll_summary = []
+    for staff in staff_members:
+        payroll_entries = PayrollEntry.objects.filter(
+            staff=staff,
+            payroll_period__year=current_year
+        ).select_related('payroll_period')
+        
+        total_paid = sum(float(e.net_pay_lrd) for e in payroll_entries)
+        months_paid = payroll_entries.count()
+        
+        payroll_summary.append({
+            'staff': staff,
+            'total_paid': total_paid,
+            'months_paid': months_paid,
+        })
+    
+    # Performance alerts
+    alerts = []
+    
+    # Alert 1: Staff with low attendance (< 80%)
+    for summary in attendance_summary:
+        if summary['percentage'] < 80 and summary['percentage'] > 0:
+            alerts.append({
+                'type': 'warning',
+                'title': f'Low Attendance Alert',
+                'message': f'{summary["staff"].name} has {summary["percentage"]:.0f}% attendance this year.',
+                'staff': summary['staff']
+            })
+    
+    # Alert 2: Staff with high absenteeism (> 10 days)
+    for summary in attendance_summary:
+        if summary['absent'] > 10:
+            alerts.append({
+                'type': 'danger',
+                'title': f'High Absenteeism Alert',
+                'message': f'{summary["staff"].name} has been absent {summary["absent"]} days this year.',
+                'staff': summary['staff']
+            })
+    
+    context = {
+        'attendance_summary': attendance_summary,
+        'payroll_summary': payroll_summary,
+        'alerts': alerts,
+        'current_year': current_year,
+        'total_staff': staff_members.count(),
+    }
+    return render(request, 'payroll/performance_dashboard.html', context)
+
+@login_required
+def staff_attendance_add(request, staff_id):
+    """Add attendance record for staff member"""
+    staff = get_object_or_404(Staff, pk=staff_id)
+    from datetime import datetime
+    
+    if request.method == 'POST':
+        month = int(request.POST.get('month'))
+        year = int(request.POST.get('year'))
+        days_present = int(request.POST.get('days_present', 0))
+        days_absent = int(request.POST.get('days_absent', 0))
+        days_late = int(request.POST.get('days_late', 0))
+        notes = request.POST.get('notes', '')
+        
+        attendance, created = StaffAttendance.objects.update_or_create(
+            staff=staff,
+            month=month,
+            year=year,
+            defaults={
+                'days_present': days_present,
+                'days_absent': days_absent,
+                'days_late': days_late,
+                'notes': notes,
+            }
+        )
+        
+        messages.success(request, f'Attendance record saved for {staff.name}')
+        return redirect('staff_performance_dashboard')
+    
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+    
+    context = {
+        'staff': staff,
+        'current_month': current_month,
+        'current_year': current_year,
+        'months': [
+            (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
+            (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
+            (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')
+        ],
+    }
+    return render(request, 'payroll/attendance_add.html', context)
+
+@login_required
+def staff_performance_review(request, staff_id):
+    """Add or edit performance review for staff"""
+    staff = get_object_or_404(Staff, pk=staff_id)
+    from datetime import datetime
+    from .models import StaffPerformanceReview
+    
+    current_year = datetime.now().year
+    review = StaffPerformanceReview.objects.filter(staff=staff, academic_year=str(current_year)).first()
+    
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+        strengths = request.POST.get('strengths', '')
+        areas = request.POST.get('areas_for_improvement', '')
+        recommendations = request.POST.get('recommendations', '')
+        
+        StaffPerformanceReview.objects.update_or_create(
+            staff=staff,
+            academic_year=str(current_year),
+            defaults={
+                'review_date': datetime.now().date(),
+                'rating': rating,
+                'strengths': strengths,
+                'areas_for_improvement': areas,
+                'recommendations': recommendations,
+                'reviewed_by': request.user.username,
+            }
+        )
+        
+        messages.success(request, f'Performance review saved for {staff.name}')
+        return redirect('staff_performance_dashboard')
+    
+    context = {
+        'staff': staff,
+        'review': review,
+        'current_year': current_year,
+    }
+    return render(request, 'payroll/performance_review.html', context)

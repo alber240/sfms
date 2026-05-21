@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}WhatsApp Messages - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>📱 WhatsApp Messages Prepared</h1>
+    <p>The following messages are ready to send. Click each link to open WhatsApp.</p>
+    
+    {% for defaulter in defaulters %}
+    <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>{{ defaulter.student.full_name }}</strong><br>
+                <small>Phone: {{ defaulter.phone }}</small><br>
+                <small>Balance: {{ defaulter.balance|floatformat:0 }} LRD</small>
+            </div>
+            <a href="{{ defaulter.whatsapp_link }}" target="_blank" class="btn btn-success" style="padding: 10px 20px;">
+                📱 Send via WhatsApp
+            </a>
+        </div>
+        <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+            <small>{{ defaulter.message|linebreaks }}</small>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card" style="text-align: center;">
+        <p>No messages generated. Please select students first.</p>
+        <a href="{% url 'whatsapp_reminders' %}" class="btn btn-primary">Go Back</a>
+    </div>
+    {% endfor %}
+    
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="{% url 'whatsapp_reminders' %}" class="btn">← Back to Select Students</a>
+        <a href="{% url 'reports_dashboard' %}" class="btn">Back to Reports</a>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
+.btn-success { background: #28a745; }
+.btn-primary { background: #1e3c72; }
+</style>
+{% endblock %}

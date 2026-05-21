@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Attendance - {{ staff.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <h2>📋 Add Attendance Record</h2>
+        <p><strong>Staff:</strong> {{ staff.name }}</p>
+        <p><strong>Position:</strong> {{ staff.position }}</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Month</label>
+                    <select name="month" required class="form-control">
+                        {% for month_value, month_name in months %}
+                        <option value="{{ month_value }}" {% if month_value == current_month %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Year</label>
+                    <input type="number" name="year" value="{{ current_year }}" required class="form-control">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Days Present</label>
+                    <input type="number" name="days_present" step="1" min="0" max="31" value="0" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Days Absent</label>
+                    <input type="number" name="days_absent" step="1" min="0" max="31" value="0" required class="form-control">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Days Late</label>
+                <input type="number" name="days_late" step="1" min="0" max="31" value="0" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="3" class="form-control" placeholder="Any additional notes about attendance..."></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Attendance</button>
+                <a href="{% url 'staff_performance_dashboard' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+        
+        <div class="info-box" style="margin-top: 20px;">
+            <strong>💡 Tip:</strong> Total days should not exceed working days in the month.
+        </div>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+</style>
+{% endblock %}

@@ -110,7 +110,7 @@
     <div class="navbar">
         <h2>🏫 SFMS</h2>
         <div class="navbar-right">
-            {% if user.username == 'principal' %}
+            {% if user.username == 'principal' or user.username|slice:":3" == 'pri' %}
                 <a href="/principal/">
                     {% if LANGUAGE == 'fr' %}Tableau de Bord{% else %}Dashboard{% endif %}
                 </a>
@@ -119,6 +119,9 @@
                 </a>
                 <a href="/reports/">
                     {% if LANGUAGE == 'fr' %}Rapports{% else %}Reports{% endif %}
+                </a>
+                <a href="/mobile/">
+                    {% if LANGUAGE == 'fr' %}Mobile{% else %}Mobile{% endif %}
                 </a>
             {% else %}
                 <a href="/dashboard/">
@@ -135,6 +138,9 @@
                 </a>
                 <a href="/settings/">
                     {% if LANGUAGE == 'fr' %}Paramètres{% else %}Settings{% endif %}
+                </a>
+                <a href="/payroll/">
+                    {% if LANGUAGE == 'fr' %}Paie{% else %}Payroll{% endif %}
                 </a>
             {% endif %}
             

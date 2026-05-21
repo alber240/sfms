@@ -104,3 +104,69 @@ class PayrollReceipt(models.Model):
     
     def __str__(self):
         return f"Payroll Receipt #{self.receipt_number}"
+
+class StaffAttendance(models.Model):
+    """Track staff attendance and performance"""
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='attendance')
+    month = models.IntegerField()
+    year = models.IntegerField()
+    days_present = models.IntegerField(default=0)
+    days_absent = models.IntegerField(default=0)
+    days_late = models.IntegerField(default=0)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['staff', 'month', 'year']
+    
+    def __str__(self):
+        return f"{self.staff.name} - {self.month}/{self.year} - Present: {self.days_present}"
+
+class StaffPerformanceReview(models.Model):
+    """Annual performance review for staff"""
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='reviews')
+    review_date = models.DateField()
+    academic_year = models.CharField(max_length=10)
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)], help_text="1=Poor, 5=Excellent")
+    strengths = models.TextField(blank=True)
+    areas_for_improvement = models.TextField(blank=True)
+    recommendations = models.TextField(blank=True)
+    reviewed_by = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.staff.name} - {self.academic_year} - Rating: {self.rating}/5"
+
+class StaffAttendance(models.Model):
+    """Track staff attendance and performance"""
+    staff = models.ForeignKey('Staff', on_delete=models.CASCADE, related_name='attendance')
+    month = models.IntegerField()
+    year = models.IntegerField()
+    days_present = models.IntegerField(default=0)
+    days_absent = models.IntegerField(default=0)
+    days_late = models.IntegerField(default=0)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['staff', 'month', 'year']
+    
+    def __str__(self):
+        return f"{self.staff.name} - {self.month}/{self.year} - Present: {self.days_present}"
+
+class StaffPerformanceReview(models.Model):
+    """Annual performance review for staff"""
+    staff = models.ForeignKey('Staff', on_delete=models.CASCADE, related_name='reviews')
+    review_date = models.DateField(auto_now_add=True)
+    academic_year = models.CharField(max_length=10)
+    rating = models.IntegerField(help_text="1=Poor, 5=Excellent")
+    strengths = models.TextField(blank=True)
+    areas_for_improvement = models.TextField(blank=True)
+    recommendations = models.TextField(blank=True)
+    reviewed_by = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.staff.name} - {self.academic_year} - Rating: {self.rating}/5"

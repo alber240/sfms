@@ -6,7 +6,7 @@
 <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h1>👨‍🎓 Student Management</h1>
-        {% if user.username != 'principal' %}
+        {% if user.username != 'principal' and user.username|slice:":3" != 'pri' %}
         <a href="{% url 'student_add' %}" class="btn btn-primary">+ Add New Student</a>
         {% endif %}
     </div>
@@ -34,22 +34,22 @@
             <tbody>
                 {% for s in students %}
                 <tr>
-                    <td>{{ s.admission_number }}</td>
-                    <td>{{ s.full_name }}</td>
-                    <td>{{ s.get_class_name }}</td>
-                    <td>{{ s.get_student_type_display }}</td>
-                    <td>{{ s.parent_phone|default:"-" }}</td>
+                    <td>{{ s.admission_number }}</a></td>
+                    <td>{{ s.full_name }}</a></td>
+                    <td>{{ s.get_class_name }}</a></td>
+                    <td>{{ s.get_student_type_display }}</a></td>
+                    <td>{{ s.parent_phone|default:"-" }}</a></td>
                     <td class="actions">
                         <a href="{% url 'student_detail' s.id %}" class="btn-small">View</a>
-                        {% if user.username != 'principal' %}
+                        {% if user.username != 'principal' and user.username|slice:":3" != 'pri' %}
                         <a href="{% url 'student_edit' s.id %}" class="btn-small">Edit</a>
                         <a href="{% url 'payment_entry' s.id %}" class="btn-small btn-success">Pay</a>
                         {% endif %}
-                    </td>
+                    </a></td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" style="text-align: center;">No students found</td>
+                    <td colspan="6" style="text-align: center;">No students found</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -72,9 +72,12 @@
     </div>
     {% endif %}
     
+    <!-- Only show Back to Settings for accountant -->
+    {% if user.username != 'principal' and user.username|slice:":3" != 'pri' %}
     <div style="margin-top: 20px;">
         <a href="{% url 'settings_dashboard' %}" class="btn">← Back to Settings</a>
     </div>
+    {% endif %}
 </div>
 
 <style>

@@ -32,12 +32,18 @@
             <div class="desc">Students with outstanding balances</div>
         </a>
 
+
                 <a href="{% url 'missing_receipts' %}" class="btn" style="text-decoration: none; text-align: center;">
             <div class="icon" style="font-size: 48px;">🔍</div>
             <div class="title" style="font-size: 18px; font-weight: bold;">Missing Receipts</div>
             <div class="desc">Find skipped receipt numbers (Audit)</div>
         </a>
     </div>
+            <a href="{% url 'whatsapp_reminders' %}" class="btn" style="text-decoration: none; text-align: center;">
+                <div class="icon" style="font-size: 48px;">📱</div>
+                <div class="title" style="font-size: 18px; font-weight: bold;">WhatsApp Reminders</div>
+                <div class="desc">Send payment reminders to parents</div>
+            </a>
 </div>
 
 <style>

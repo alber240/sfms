@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Principal Dashboard - SFMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fb;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.8;
+            font-size: 13px;
+        }
+        
+        .readonly-badge {
+            background: #ffc107;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card h3 {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .stat-card .sub {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        /* Progress Card */
+        .progress-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .progress-card h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #1e3c72;
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+            background: #28a745;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 10px;
+        }
+        
+        /* Section Cards */
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .section-card h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #1e3c72;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Defaulters List */
+        .defaulter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .defaulter-item:last-child {
+            border-bottom: none;
+        }
+        
+        .defaulter-info {
+            flex: 1;
+        }
+        
+        .defaulter-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .defaulter-class {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .defaulter-amount {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 14px;
+        }
+        
+        .defaulter-phone {
+            font-size: 11px;
+            color: #28a745;
+            margin-top: 2px;
+        }
+        
+        /* Receipt List */
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .receipt-item:last-child {
+            border-bottom: none;
+        }
+        
+        .receipt-student {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .receipt-date {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .receipt-amount {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 14px;
+        }
+        
+        /* Class Collection */
+        .class-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        
+        .class-name {
+            font-size: 13px;
+        }
+        
+        .class-amount {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        /* Alert Badge */
+        .alert-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+        
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Logout Button */
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 12px;
+            }
+            
+            .stat-card .number {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="readonly-badge">📖 READ-ONLY ACCESS</div>
+        <h1>🏫 School Dashboard</h1>
+        <p>{{ today|date:"l, F j, Y" }}</p>
+        <a href="/logout/" class="logout-btn">Logout</a>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Today's Collection</h3>
+            <div class="number">{{ today_collected_lrd|floatformat:0 }} LRD</div>
+            <div class="sub">{{ today_collected_usd|floatformat:2 }} USD</div>
+        </div>
+        <div class="stat-card">
+            <h3>This Week</h3>
+            <div class="number">{{ week_collected_lrd|floatformat:0 }} LRD</div>
+        </div>
+        <div class="stat-card">
+            <h3>This Month</h3>
+            <div class="number">{{ month_collected_lrd|floatformat:0 }} LRD</div>
+        </div>
+        <div class="stat-card">
+            <h3>Students with Balance</h3>
+            <div class="number">{{ students_with_balance }}</div>
+            <div class="sub">out of {{ total_students }}</div>
+        </div>
+    </div>
+    
+    <!-- Collection Progress -->
+    <div class="progress-card">
+        <h3>📊 Collection Rate</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ collection_rate|floatformat:0 }}%;">
+                {{ collection_rate|floatformat:0 }}%
+            </div>
+        </div>
+        <div style="font-size: 12px; color: #666;">
+            {{ students_with_payments|default:0 }} of {{ total_students }} students have paid
+        </div>
+    </div>
+    
+    <!-- Alerts -->
+    {% if overdue_count > 0 %}
+    <div class="section-card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+        <h3>⚠️ Overdue Payments</h3>
+        <p style="font-size: 14px;">{{ overdue_count }} student(s) have overdue payments</p>
+    </div>
+    {% endif %}
+    
+    {% if total_outstanding > 0 %}
+    <div class="section-card" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+        <h3>💰 Total Outstanding</h3>
+        <p style="font-size: 20px; font-weight: bold; color: #dc3545;">{{ total_outstanding|floatformat:0 }} LRD</p>
+    </div>
+    {% endif %}
+    
+    <!-- Top Defaulters -->
+    <div class="section-card">
+        <h3>⚠️ Top Defaulters</h3>
+        {% for defaulter in top_defaulters %}
+        <div class="defaulter-item">
+            <div class="defaulter-info">
+                <div class="defaulter-name">{{ defaulter.name }}</div>
+                <div class="defaulter-class">{{ defaulter.class }}</div>
+                <div class="defaulter-phone">📱 {{ defaulter.phone }}</div>
+            </div>
+            <div class="defaulter-amount">{{ defaulter.balance|floatformat:0 }} LRD</div>
+        </div>
+        {% empty %}
+        <p style="text-align: center; color: #999; padding: 20px;">No defaulters found</p>
+        {% endfor %}
+    </div>
+    
+    <!-- Recent Payments -->
+    <div class="section-card">
+        <h3>📋 Recent Payments</h3>
+        {% for receipt in recent_receipts %}
+        <div class="receipt-item">
+            <div>
+                <div class="receipt-student">{{ receipt.student.full_name }}</div>
+                <div class="receipt-date">Receipt #{{ receipt.receipt_number }} | {{ receipt.payment_date|date:"M d" }}</div>
+            </div>
+            <div class="receipt-amount">{{ receipt.amount_lrd|floatformat:0 }} LRD</div>
+        </div>
+        {% empty %}
+        <p style="text-align: center; color: #999; padding: 20px;">No recent payments</p>
+        {% endfor %}
+    </div>
+    
+    <!-- Collection by Class -->
+    {% if class_collections %}
+    <div class="section-card">
+        <h3>📊 Collection by Class (This Week)</h3>
+        {% for class_name, amount in class_collections.items %}
+        <div class="class-item">
+            <span class="class-name">{{ class_name }}</span>
+            <span class="class-amount">{{ amount|floatformat:0 }} LRD</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="location.reload()">🔄</button>
+    
+    <script>
+        // Auto-refresh every 60 seconds
+        setTimeout(function() {
+            location.reload();
+        }, 60000);
+    </script>
+</body>
+</html>

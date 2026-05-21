@@ -1,0 +1,102 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Expense Approvals - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>📋 Expense Approval Workflow</h1>
+    
+    {% if pending_count > 0 %}
+    <div class="alert alert-warning">
+        ⚠️ You have {{ pending_count }} expense(s) pending approval!
+    </div>
+    {% endif %}
+    
+    <!-- Pending Approvals -->
+    <div class="card">
+        <h2>⏳ Pending Approval ({{ pending_approvals|length }})</h2>
+        
+        {% if pending_approvals %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Requested By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in pending_approvals %}
+                <tr>
+                    <td>{{ approval.expense.expense_date|date:"Y-m-d" }}</a>
+                    <td>{{ approval.expense.category.name }}</a>
+                    <td>{{ approval.expense.description|truncatechars:50 }}</a>
+                    <td>
+                        {% if approval.expense.amount_lrd > 0 %}{{ approval.expense.amount_lrd }} LRD{% endif %}
+                        {% if approval.expense.amount_usd > 0 %}{{ approval.expense.amount_usd }} USD{% endif %}
+                    </a>
+                    <td>{{ approval.requested_by.username }}</a>
+                    <td class="actions">
+                        <a href="{% url 'expense_approve' approval.id %}" class="btn-small btn-success">Approve</a>
+                        <a href="{% url 'expense_reject' approval.id %}" class="btn-small btn-danger">Reject</a>
+                    </a>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No pending approvals</p>
+        {% endif %}
+    </div>
+    
+    <!-- Approved Expenses -->
+    <div class="card">
+        <h2>✅ Approved Expenses</h2>
+        
+        {% if approved_approvals %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Approved By</th>
+                    <th>Approved At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in approved_approvals %}
+                <tr>
+                    <td>{{ approval.expense.expense_date|date:"Y-m-d" }}</a>
+                    <td>{{ approval.expense.description|truncatechars:50 }}</a>
+                    <td>{{ approval.expense.amount_lrd }} LRD</a>
+                    <td>{{ approval.approved_by.username }}</a>
+                    <td>{{ approval.approved_at|date:"Y-m-d H:i" }}</a>
+                </td>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No approved expenses</p>
+        {% endif %}
+    </div>
+    
+    <!--<div style="margin-top: 20px;">
+        <a href="{% url 'expense_list' %}" class="btn">← Back to Expenses</a>
+    </div>
+</div>-->
+
+<style>
+.card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+.alert-warning { background: #fff3cd; padding: 12px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #ffc107; }
+.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; margin: 0 2px; }
+.btn-success { background: #28a745; }
+.btn-danger { background: #dc3545; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+.actions { white-space: nowrap; }
+</style>
+{% endblock %}

@@ -46,6 +46,12 @@
         .stat-card h3 { font-size: 11px; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         .stat-card .number { font-size: 28px; font-weight: bold; color: #1e3c72; }
         .stat-card small { font-size: 11px; color: #999; }
+        .stat-card.pending {
+            background: #fff3cd;
+        }
+        .stat-card.pending .number {
+            color: #856404;
+        }
         .receipt-card {
             background: white;
             border-radius: 12px;
@@ -91,6 +97,21 @@
             cursor: pointer;
             margin-top: 10px;
         }
+        .btn-approval {
+            background: #ffc107;
+            color: #856404;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .btn-approval:hover {
+            background: #e0a800;
+        }
         .nav-links {
             margin-top: 15px;
             display: flex;
@@ -122,6 +143,8 @@
         <div class="nav-links">
             <a href="/students/">📋 View Students</a>
             <a href="/reports/">📊 Reports</a>
+            <a href="/mobile/">📱 Mobile View</a>
+            <a href="/expenses/approvals/">✅ Expense Approvals</a>
         </div>
         <div>
             <a href="/logout/" class="logout-btn">Logout</a>
@@ -143,6 +166,13 @@
             <div class="number">{{ students_with_balance }}</div>
             <small>out of {{ total_students }}</small>
         </div>
+        {% if pending_approvals_count > 0 %}
+        <div class="stat-card pending">
+            <h3>⚠️ Pending Approvals</h3>
+            <div class="number">{{ pending_approvals_count }}</div>
+            <small><a href="/expenses/approvals/" style="color: #856404;">Review Now →</a></small>
+        </div>
+        {% endif %}
     </div>
     
     <div class="receipt-card">
@@ -160,6 +190,19 @@
         {% endfor %}
     </div>
     
+    {% if pending_approvals_count > 0 %}
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="/expenses/approvals/" class="btn-approval">✅ Review Pending Expense Approvals ({{ pending_approvals_count }})</a>
+    </div>
+    {% endif %}
+    
+    <div class="nav-links">
+        <a href="/students/">📋 View Students</a>
+        <a href="/reports/">📊 Reports</a>
+        <a href="/mobile/">📱 Mobile View</a>
+        <a href="/expenses/approvals/">✅ Expense Approvals</a>
+    </div>    
+
     <div class="footer">
         <p>SFMS - Liberia Edition | Read-Only Portal</p>
         <p style="margin-top: 5px;">Contact accountant for payments and edits</p>

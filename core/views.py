@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from receipts.models import Receipt
 from expenses.models import Expense
 from students.models import Student
-
+from expenses.models import ExpenseApproval
 # Safe imports for fees models
 try:
     from fees.models import StudentFeeLedger, InstallmentReminder
@@ -27,6 +27,10 @@ def login_view(request):
                 return redirect('change_password')
         except:
             pass
+        
+        # Redirect based on user role
+        if request.user.username.startswith('pri_') or request.user.username == 'principal':
+            return redirect('principal_dashboard')
         return redirect('dashboard')
     
     if request.method == 'POST':
@@ -44,7 +48,8 @@ def login_view(request):
             except:
                 pass
             
-            if user.username.startswith('pri_'):
+            # Redirect based on user role
+            if user.username.startswith('pri_') or user.username == 'principal':
                 return redirect('principal_dashboard')
             return redirect('dashboard')
         else:
@@ -164,6 +169,7 @@ def principal_dashboard(request):
     students_with_balance = StudentFeeLedger.objects.exclude(
         semester1_total_lrd=0, semester2_total_lrd=0
     ).count()
+    pending_approvals_count = ExpenseApproval.objects.filter(status='PENDING').count()
     
     total_students = Student.objects.filter(is_active=True).count()
     
@@ -663,3 +669,90 @@ def check_update(request):
         'latest_version': current_version,
         'message': 'You have the latest version'
     })
+
+@login_required
+def mobile_principal_dashboard(request):
+    """Enhanced mobile-friendly dashboard for principal"""
+    from django.db.models import Sum
+    from datetime import date, timedelta
+    from receipts.models import Receipt
+    from expenses.models import Expense
+    from students.models import Student
+    from fees.models import StudentFeeLedger, InstallmentReminder
+    
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = date(today.year, today.month, 1)
+    
+    # Today's collections
+    today_receipts = Receipt.objects.filter(payment_date=today, is_voided=False)
+    today_collected_lrd = today_receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    today_collected_usd = today_receipts.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+    
+    # Weekly collections
+    week_receipts = Receipt.objects.filter(payment_date__gte=week_start, is_voided=False)
+    week_collected_lrd = week_receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    
+    # Monthly collections
+    month_receipts = Receipt.objects.filter(payment_date__gte=month_start, is_voided=False)
+    month_collected_lrd = month_receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    
+    # Students with balance
+    students_with_balance = 0
+    total_outstanding = 0
+    for student in Student.objects.filter(is_active=True):
+        ledger = StudentFeeLedger.objects.filter(student=student).first()
+        if ledger and ledger.total_balance_lrd > 0:
+            students_with_balance += 1
+            total_outstanding += ledger.total_balance_lrd
+    
+    total_students = Student.objects.filter(is_active=True).count()
+    
+    # Recent receipts (last 10)
+    recent_receipts = Receipt.objects.filter(is_voided=False).order_by('-payment_date')[:10]
+    
+    # Top defaulters (students with highest balance)
+    top_defaulters = []
+    for student in Student.objects.filter(is_active=True)[:10]:
+        ledger = StudentFeeLedger.objects.filter(student=student).first()
+        if ledger and ledger.total_balance_lrd > 0:
+            top_defaulters.append({
+                'name': student.full_name,
+                'class': student.get_class_name(),
+                'balance': ledger.total_balance_lrd,
+                'phone': student.parent_phone or 'No phone'
+            })
+    top_defaulters.sort(key=lambda x: x['balance'], reverse=True)
+    top_defaulters = top_defaulters[:5]
+    
+    # Collection by class
+    class_collections = {}
+    for receipt in week_receipts:
+        class_name = receipt.student.get_class_name()
+        if class_name not in class_collections:
+            class_collections[class_name] = 0
+        class_collections[class_name] += float(receipt.amount_lrd)
+    
+    # Overdue reminders
+    overdue_count = InstallmentReminder.objects.filter(is_paid=False, due_date__lt=today).count()
+    
+    # Calculate collection target (70% of total students should have paid something)
+    students_with_payments = Receipt.objects.filter(is_voided=False).values('student').distinct().count()
+    collection_rate = (students_with_payments / total_students * 100) if total_students > 0 else 0
+    
+    context = {
+        'today_collected_lrd': today_collected_lrd,
+        'today_collected_usd': today_collected_usd,
+        'week_collected_lrd': week_collected_lrd,
+        'month_collected_lrd': month_collected_lrd,
+        'students_with_balance': students_with_balance,
+        'total_outstanding': total_outstanding,
+        'total_students': total_students,
+        'overdue_count': overdue_count,
+        'collection_rate': collection_rate,
+        'recent_receipts': recent_receipts,
+        'top_defaulters': top_defaulters,
+        'class_collections': class_collections,
+        'today': today,
+    }
+    return render(request, 'mobile_principal_dashboard.html', context)

@@ -51,6 +51,12 @@
             </tbody>
         </table>
     </div>
+
+        {% if user.username == 'principal' or user.username|slice:":3" == 'pri' %}
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'expense_approval_list' %}" class="btn btn-warning">📋 Approval Dashboard</a>
+    </div>
+    {% endif %}
 </div>
 
 <style>

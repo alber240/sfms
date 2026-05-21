@@ -1,0 +1,45 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Reject Expense - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>❌ Reject Expense</h2>
+        
+        <div class="expense-details">
+            <p><strong>Description:</strong> {{ approval.expense.description }}</p>
+            <p><strong>Category:</strong> {{ approval.expense.category.name }}</p>
+            <p><strong>Amount:</strong> 
+                {% if approval.expense.amount_lrd > 0 %}{{ approval.expense.amount_lrd }} LRD{% endif %}
+                {% if approval.expense.amount_usd > 0 %}{{ approval.expense.amount_usd }} USD{% endif %}
+            </p>
+            <p><strong>Requested By:</strong> {{ approval.requested_by.username }}</p>
+            <p><strong>Requested Date:</strong> {{ approval.requested_at|date:"Y-m-d H:i" }}</p>
+            <p><strong>Notes:</strong> {{ approval.expense.notes|default:"No notes" }}</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Reason for Rejection *</label>
+                <textarea name="reason" rows="3" class="form-control" required placeholder="Please explain why this expense is being rejected..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">❌ Reject Expense</button>
+                <a href="{% url 'expense_approval_list' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.expense-details { background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-danger { background: #dc3545; }
+</style>
+{% endblock %}

@@ -325,3 +325,79 @@ def export_receipts_excel(request):
     response['Content-Disposition'] = f'attachment; filename="sfms_receipts_{datetime.now().strftime("%Y%m%d")}.xlsx"'
     wb.save(response)
     return response
+
+@login_required
+def send_whatsapp_reminders(request):
+    """Generate WhatsApp reminders for parents with overdue fees"""
+    from students.models import Student
+    from fees.models import StudentFeeLedger
+    from core.whatsapp_utils import generate_whatsapp_link, generate_default_reminder, generate_overdue_message
+    from core.models import SchoolSetting
+    from datetime import date, timedelta
+    from django.contrib import messages  # ADD THIS IMPORT
+    
+    school_name_setting = SchoolSetting.objects.filter(key='school_name').first()
+    school_name = school_name_setting.value if school_name_setting else 'SFMS SCHOOL'
+    
+    defaulters = []
+    
+    if request.method == 'POST':
+        selected_students = request.POST.getlist('selected_students')
+        message_type = request.POST.get('message_type', 'reminder')
+        
+        for student_id in selected_students:
+            student = Student.objects.get(id=student_id)
+            ledger = StudentFeeLedger.objects.filter(student=student).first()
+            
+            if ledger and ledger.total_balance_lrd > 0:
+                if message_type == 'reminder':
+                    message = generate_default_reminder(
+                        student.full_name, 
+                        ledger.total_balance_lrd,
+                        (date.today() + timedelta(days=7)).strftime('%Y-%m-%d'),
+                        school_name
+                    )
+                else:
+                    days_overdue = (date.today() - ledger.last_payment_date).days if ledger.last_payment_date else 30
+                    message = generate_overdue_message(
+                        student.full_name,
+                        ledger.total_balance_lrd,
+                        days_overdue,
+                        school_name
+                    )
+                
+                if student.parent_phone:
+                    whatsapp_link = generate_whatsapp_link(student.parent_phone, message)
+                    defaulters.append({
+                        'student': student,
+                        'phone': student.parent_phone,
+                        'balance': ledger.total_balance_lrd,
+                        'whatsapp_link': whatsapp_link,
+                        'message': message
+                    })
+        
+        # Store in session for bulk sending
+        request.session['whatsapp_messages'] = [
+            {'phone': d['phone'], 'link': d['whatsapp_link'], 'student': d['student'].full_name}
+            for d in defaulters
+        ]
+        
+        messages.success(request, f'Prepared {len(defaulters)} WhatsApp messages. Click the links to send.')
+        return render(request, 'reports/whatsapp_reminders_result.html', {'defaulters': defaulters})
+    
+    # GET request - show students with balances
+    students = Student.objects.filter(is_active=True)
+    for student in students:
+        ledger = StudentFeeLedger.objects.filter(student=student).first()
+        if ledger and ledger.total_balance_lrd > 0:
+            defaulters.append({
+                'student': student,
+                'balance': ledger.total_balance_lrd,
+                'phone': student.parent_phone or 'No phone'
+            })
+    
+    context = {
+        'defaulters': defaulters,
+        'school_name': school_name,
+    }
+    return render(request, 'reports/whatsapp_reminders.html', context)

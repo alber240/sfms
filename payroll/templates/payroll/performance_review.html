@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Performance Review - {{ staff.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>⭐ Performance Review</h2>
+        <p><strong>Staff:</strong> {{ staff.name }}</p>
+        <p><strong>Position:</strong> {{ staff.position }}</p>
+        <p><strong>Year:</strong> {{ current_year }}</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Rating (1-5)</label>
+                <select name="rating" required class="form-control">
+                    <option value="1" {% if review.rating == 1 %}selected{% endif %}>1 - Poor</option>
+                    <option value="2" {% if review.rating == 2 %}selected{% endif %}>2 - Below Average</option>
+                    <option value="3" {% if review.rating == 3 %}selected{% endif %}>3 - Average</option>
+                    <option value="4" {% if review.rating == 4 %}selected{% endif %}>4 - Good</option>
+                    <option value="5" {% if review.rating == 5 %}selected{% endif %}>5 - Excellent</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Strengths</label>
+                <textarea name="strengths" rows="4" class="form-control" placeholder="What does this staff member do well?">{{ review.strengths|default:"" }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Areas for Improvement</label>
+                <textarea name="areas_for_improvement" rows="4" class="form-control" placeholder="What can this staff member improve?">{{ review.areas_for_improvement|default:"" }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Recommendations</label>
+                <textarea name="recommendations" rows="4" class="form-control" placeholder="Training, support, or other recommendations...">{{ review.recommendations|default:"" }}</textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Review</button>
+                <a href="{% url 'staff_performance_dashboard' %}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card { background: white; padding: 30px; border-radius: 10px; margin-top: 50px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+.btn { display: inline-block; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; }
+.btn-primary { background: #1e3c72; }
+</style>
+{% endblock %}

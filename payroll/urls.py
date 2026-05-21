@@ -15,6 +15,10 @@ urlpatterns = [
     path('receipt/<int:entry_id>/', views.payroll_receipt_print, name='payroll_receipt_print'),
     path('bulk-receipts/<int:period_id>/', views.payroll_bulk_receipts_print, name='payroll_bulk_receipts_print'),
     path('bulk-individual/<int:period_id>/', views.payroll_bulk_individual_receipts, name='payroll_bulk_individual_receipts'),
+
+    path('performance/', views.staff_performance_dashboard, name='staff_performance_dashboard'),
+    path('attendance/add/<int:staff_id>/', views.staff_attendance_add, name='staff_attendance_add'),
+    path('performance/review/<int:staff_id>/', views.staff_performance_review, name='staff_performance_review'),
 ]
 
 
