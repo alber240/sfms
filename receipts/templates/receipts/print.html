@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt #{{ receipt.receipt_number }}</title>
+    <title>SFMS Receipt #{{ receipt.receipt_number }} | School Financial Management System by Albert A. Allen</title>
     <style>
         @media print {
             body {
@@ -89,6 +89,27 @@
             padding-top: 10px;
         }
         
+        /* SMALL DEVELOPER FOOTER - Added at the very bottom */
+        .developer-footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px dotted #ccc;
+            padding-top: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .developer-footer a {
+            color: #666;
+            text-decoration: none;
+        }
+        
+        .developer-footer .developer-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
         .signature {
             margin-top: 40px;
             display: flex;
@@ -144,7 +165,7 @@
             <span>{{ receipt.student.admission_number }}</span>
         </div>
         
-                <div class="info-row">
+        <div class="info-row">
             <span><strong>Class:</strong></span>
             <span>{{ receipt.student.get_class_name }}</span>
         </div>
@@ -160,7 +181,8 @@
             <span>{{ receipt.mobile_transaction_id }}</span>
         </div>
         {% endif %}
-                <div class="info-row">
+        
+        <div class="info-row">
             <span><strong>Fee Type:</strong></span>
             <span>
                 {% for alloc in receipt.allocations.all %}
@@ -206,11 +228,11 @@
         {% endif %}
         
         <div class="footer">
-            <p>This is a computer-generated receipt. No signature required. or will be dont manually</p>
+            <p>This is a computer-generated receipt. No signature required or will be done manually.</p>
             <p>Thank you for your payment!</p>
         </div>
         
-               <div class="signature">
+        <div class="signature">
             <div class="signature-box">
                 {% if school_accountant_name %}
                 <div style="margin-bottom: 5px; font-weight: bold;">{{ school_accountant_name }}</div>
@@ -228,6 +250,14 @@
         
         <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #999;">
             <p>This receipt is valid only with official stamp and signatures above.</p>
+        </div>
+        
+        <!-- SMALL DEVELOPER FOOTER - Albert A. Allen Identity -->
+        <div class="developer-footer">
+            <span class="developer-name">SFMS by Albert A. Allen</span> | 
+            🇱🇷 Made for Liberia | 
+            📧 allen.tech.africa@gmail.com | 
+            🔒 Licensed to: {{ school_name|default:"SFMS SCHOOL" }}
         </div>
     </div>
 </body>

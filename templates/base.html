@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <title>SFMS - School Financial Management</title>
+    <title>SFMS - School Financial Management System by Albert A. Allen</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
@@ -16,6 +16,11 @@
             flex-wrap: wrap;
         }
         .navbar h2 { font-size: 24px; }
+        .navbar h2 small {
+            font-size: 10px;
+            display: block;
+            color: #ffd700;
+        }
         .navbar a {
             color: white;
             text-decoration: none;
@@ -98,6 +103,58 @@
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
         
+        /* Footer Styles */
+        .sfms-footer {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin-top: 50px;
+            padding: 30px;
+            text-align: center;
+        }
+        .sfms-footer .developer-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .sfms-footer .contact-info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .sfms-footer .copyright {
+            margin-top: 15px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .sfms-footer .license-info {
+            margin-top: 10px;
+            font-size: 11px;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 10px;
+            display: inline-block;
+        }
+        
+        /* Watermark for printed pages */
+        @media print {
+            body {
+                background: white;
+            }
+            .navbar, .btn, .sfms-footer {
+                display: none;
+            }
+            .print-watermark {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                text-align: center;
+                font-size: 10px;
+                color: #ccc;
+                background: white;
+                padding: 5px;
+            }
+        }
+        
         @media (max-width: 768px) {
             .form-row { grid-template-columns: 1fr; }
             .container { padding: 15px; }
@@ -108,7 +165,10 @@
 </head>
 <body>
     <div class="navbar">
-        <h2>🏫 SFMS</h2>
+        <h2>
+            🏫 SFMS 
+            <small>School Financial Management System</small>
+        </h2>
         <div class="navbar-right">
             {% if user.username == 'principal' or user.username|slice:":3" == 'pri' %}
                 <a href="/principal/">
@@ -172,6 +232,28 @@
     
     {% block content %}{% endblock %}
     
+    <!-- SFMS FOOTER WITH DEVELOPER IDENTITY -->
+    <div class="sfms-footer">
+        <div class="developer-name">
+            🇱🇷 SFMS - School Financial Management System
+        </div>
+        <div class="developer-name" style="font-size: 16px; margin-top: 5px;">
+            Developed by <strong>Albert A. Allen</strong>
+        </div>
+        <div class="contact-info">
+            📧 allen.tech.africa@gmail.com | 
+            📞 +250 790 362 843 | 
+            🌍 Made for Liberia, by a Liberian
+        </div>
+        <div class="copyright">
+            © 2026 Albert A. Allen - Master's Student, Software Engineering<br>
+            INES-Ruhengeri University, Rwanda | Bachelor of Science in Computer Science (2025)
+        </div>
+        <div class="license-info" id="licenseInfo">
+            Loading license information...
+        </div>
+    </div>
+    
     <!-- 4 PM Reminder Popup -->
     <div id="reminderPopup" class="reminder-popup" style="display: none; position: fixed; bottom: 20px; right: 20px; background: #fff3cd; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 320px; z-index: 9999; border: 1px solid #ffc107;">
         <div style="background: #ffc107; padding: 12px 15px; border-radius: 10px 10px 0 0; color: #856404; font-weight: bold;">
@@ -194,7 +276,30 @@
         </div>
     </div>
     
+    <!-- Printed page watermark -->
+    <div class="print-watermark">
+        SFMS by Albert A. Allen | Support: allen.tech.africa@gmail.com
+    </div>
+    
     <script>
+        // Load license information for footer
+        function loadLicenseInfo() {
+            fetch('/api/license-info/')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    var licenseDiv = document.getElementById('licenseInfo');
+                    if (licenseDiv) {
+                        licenseDiv.innerHTML = 'Licensed to: ' + data.school_name + ' | License: ' + data.license_key;
+                    }
+                })
+                .catch(function(error) {
+                    var licenseDiv = document.getElementById('licenseInfo');
+                    if (licenseDiv) {
+                        licenseDiv.innerHTML = 'SFMS by Albert A. Allen | allen.tech.africa@gmail.com';
+                    }
+                });
+        }
+        
         function checkReminder() {
             fetch('/check-reminder/')
                 .then(function(response) { return response.json(); })
@@ -215,6 +320,9 @@
                 .then(function() { closeReminder(); })
                 .catch(function(error) { console.log('Error dismissing reminder:', error); closeReminder(); });
         }
+        
+        // Load license info when page loads
+        loadLicenseInfo();
         
         setTimeout(checkReminder, 1000);
         

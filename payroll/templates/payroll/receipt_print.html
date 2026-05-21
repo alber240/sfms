@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll Receipt - {{ staff.name }}</title>
+    <title>Payroll Receipt - {{ staff.name }} | SFMS by Albert A. Allen</title>
     <style>
         @media print {
             body { margin: 0; padding: 0; }
@@ -68,6 +68,22 @@
             font-size: 12px;
             border-top: 1px dashed #000;
             padding-top: 10px;
+        }
+        
+        /* SMALL DEVELOPER FOOTER - Albert A. Allen Identity */
+        .developer-footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px dotted #ccc;
+            padding-top: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .developer-footer .developer-name {
+            font-weight: bold;
+            color: #333;
         }
         
         .signature {
@@ -187,6 +203,14 @@
                 <div class="signature-line">_____________________</div>
                 <div>Staff Signature</div>
             </div>
+        </div>
+        
+        <!-- SMALL DEVELOPER FOOTER - Albert A. Allen Identity -->
+        <div class="developer-footer">
+            <span class="developer-name">SFMS by Albert A. Allen</span> | 
+            🇱🇷 Made for Liberia | 
+            📧 allen.tech.africa@gmail.com | 
+            🔒 Licensed to: {{ school_name|default:"SFMS SCHOOL" }}
         </div>
     </div>
 </body>

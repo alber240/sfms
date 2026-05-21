@@ -31,7 +31,8 @@ urlpatterns = [
     path('inventory/', include('inventory.urls')),
     path('payroll/', include('payroll.urls')),
     path('process-emails/', views.check_and_send_emails, name='process_emails'),
-        path('mobile/', views.mobile_principal_dashboard, name='mobile_principal_dashboard'),
+    path('mobile/', views.mobile_principal_dashboard, name='mobile_principal_dashboard'),
+    path('api/license-info/', views.license_info_api, name='license_info_api'),
 ]
 
 if settings.DEBUG:

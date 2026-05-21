@@ -756,3 +756,19 @@ def mobile_principal_dashboard(request):
         'today': today,
     }
     return render(request, 'mobile_principal_dashboard.html', context)
+
+# ========== LICENSE FUNCTIONS ==========
+def license_info_api(request):
+    """Return license information for display in footer"""
+    try:
+        from sfms.license_check import get_school_info
+        info = get_school_info()
+        return JsonResponse({
+            'school_name': info.get('school_name', 'Unlicensed School'),
+            'license_key': info.get('license_key', 'No License')
+        })
+    except Exception as e:
+        return JsonResponse({
+            'school_name': 'License Error',
+            'license_key': 'Check license.json file'
+        })

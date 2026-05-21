@@ -33,6 +33,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'audit.middleware.AuditMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'sfms.middleware.LicenseCheckMiddleware', 
 ]
 
 ROOT_URLCONF = 'sfms.urls'

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SFMS - School Financial Management System</title>
+    <title>SFMS - School Financial Management System by Albert A. Allen</title>
     <style>
         * {
             margin: 0;
@@ -41,6 +41,14 @@
         .logo p {
             color: #666;
             margin-top: 5px;
+        }
+        
+        .developer-credit {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+            color: #1e3c72;
+            font-weight: bold;
         }
         
         .form-group {
@@ -98,14 +106,36 @@
             font-size: 12px;
             color: #999;
         }
+        
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        .footer .developer-name {
+            color: #1e3c72;
+            font-weight: bold;
+        }
+        
+        .footer a {
+            color: #2a5298;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="logo">
-            <h1>?? SFMS</h1>
+            <h1>🏫 SFMS</h1>
             <p>School Financial Management System</p>
             <p>Liberia Edition</p>
+            <div class="developer-credit">
+                🇱🇷 Created by <strong>Albert A. Allen</strong>
+            </div>
         </div>
         
         {% if messages %}
@@ -129,6 +159,12 @@
         
         <div class="info">
             Demo: accountant / School2024
+        </div>
+        
+        <div class="footer">
+            <span class="developer-name">SFMS by Albert A. Allen</span><br>
+            📧 allen.tech.africa@gmail.com | 📞 +250 790 362 843<br>
+            Made for Liberia, by a Liberian | © 2026
         </div>
     </div>
 </body>

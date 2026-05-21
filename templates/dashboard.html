@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SFMS</title>
+    <title>Dashboard - SFMS by Albert A. Allen</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
@@ -17,6 +17,11 @@
             flex-wrap: wrap;
         }
         .navbar h2 { font-size: 24px; }
+        .navbar h2 small {
+            font-size: 10px;
+            display: block;
+            color: #ffd700;
+        }
         .navbar a {
             color: white;
             text-decoration: none;
@@ -100,6 +105,38 @@
             padding: 20px;
             margin-top: 30px;
         }
+        
+        /* Footer Styles */
+        .sfms-footer {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin-top: 50px;
+            padding: 30px;
+            text-align: center;
+        }
+        .sfms-footer .developer-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .sfms-footer .contact-info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .sfms-footer .copyright {
+            margin-top: 15px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .sfms-footer .license-info {
+            margin-top: 10px;
+            font-size: 11px;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 10px;
+            display: inline-block;
+        }
+        
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .buttons { grid-template-columns: 1fr; }
@@ -110,7 +147,10 @@
 </head>
 <body>
     <div class="navbar">
-        <h2>🏫 School Financial Management System</h2>
+        <h2>
+            🏫 School Financial Management System
+            <small>SFMS by Albert A. Allen</small>
+        </h2>
         <div class="navbar-right">
             <span>Welcome, {{ user.username }}</span>
             <a href="/logout/">Logout</a>
@@ -121,6 +161,9 @@
         <div class="welcome">
             <h3>Welcome to SFMS, {{ user.username }}!</h3>
             <p>Your complete school financial management solution for Liberia</p>
+            <p style="font-size: 12px; margin-top: 10px; color: #1e3c72;">
+                🇱🇷 Developed by Albert A. Allen - Liberian Software Engineer
+            </p>
         </div>
         
         <div class="stats">
@@ -203,7 +246,7 @@
                 <div class="desc">Backup to USB</div>
             </a>
 
-                        <a href="/reports/whatsapp-reminders/" class="btn btn-info">
+            <a href="/reports/whatsapp-reminders/" class="btn btn-info">
                 <div class="icon">📱</div>
                 <div class="title">WhatsApp</div>
                 <div class="desc">Send payment reminders</div>
@@ -224,23 +267,68 @@
                 <tbody>
                     {% for receipt in recent_receipts %}
                     <tr>
-                        <td>#{{ receipt.receipt_number }}</a></td>
-                        <td>{{ receipt.student.full_name }}</a></td>
+                        <td>#{{ receipt.receipt_number }}</td>
+                        <td>{{ receipt.student.full_name }}</td>
                         <td>
                             {% if receipt.amount_lrd > 0 %}{{ receipt.amount_lrd }} LRD{% endif %}
                             {% if receipt.amount_lrd > 0 and receipt.amount_usd > 0 %} + {% endif %}
                             {% if receipt.amount_usd > 0 %}{{ receipt.amount_usd }} USD{% endif %}
-                         </a></td>
-                        <td>{{ receipt.payment_date|date:"Y-m-d" }}</a></td>
+                        </td>
+                        <td>{{ receipt.payment_date|date:"Y-m-d" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" style="text-align: center;">No receipts yet</a></td>
+                        <td colspan="4" style="text-align: center;">No receipts yet</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    
+    <!-- SFMS FOOTER WITH DEVELOPER IDENTITY -->
+    <div class="sfms-footer">
+        <div class="developer-name">
+            🇱🇷 SFMS - School Financial Management System
+        </div>
+        <div class="developer-name" style="font-size: 16px; margin-top: 5px;">
+            Developed by <strong>Albert A. Allen</strong>
+        </div>
+        <div class="contact-info">
+            📧 allen.tech.africa@gmail.com | 
+            📞 +250 790 362 843 | 
+            🌍 Made for Liberia, by a Liberian
+        </div>
+        <div class="copyright">
+            © 2026 Albert A. Allen - Master's Student, Software Engineering<br>
+            INES-Ruhengeri University, Rwanda | Bachelor of Science in Computer Science (2025)
+        </div>
+        <div class="license-info" id="licenseInfo">
+            Loading license information...
+        </div>
+    </div>
+    
+    <script>
+        // Load license information for footer
+        function loadLicenseInfo() {
+            fetch('/api/license-info/')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    var licenseDiv = document.getElementById('licenseInfo');
+                    if (licenseDiv) {
+                        licenseDiv.innerHTML = 'Licensed to: ' + data.school_name + ' | License: ' + data.license_key;
+                    }
+                })
+                .catch(function(error) {
+                    var licenseDiv = document.getElementById('licenseInfo');
+                    if (licenseDiv) {
+                        licenseDiv.innerHTML = 'SFMS by Albert A. Allen | allen.tech.africa@gmail.com';
+                    }
+                });
+        }
+        
+        // Load license info when page loads
+        loadLicenseInfo();
+    </script>
 </body>
 </html>
