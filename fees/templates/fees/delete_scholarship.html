@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Scholarship - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #dc3545;">🗑️ Delete Scholarship</h1>
+        
+        <div style="background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #f5c6cb;">
+            <p style="color: #721c24; font-size: 16px;">
+                <strong>Warning:</strong> You are about to delete the following scholarship. This action cannot be undone.
+            </p>
+        </div>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+            <p><strong>Name:</strong> {{ scholarship.name }}</p>
+            <p><strong>Category:</strong> {{ scholarship.get_category_display }}</p>
+            <p><strong>Discount:</strong> 
+                {% if scholarship.is_percentage %}
+                    {{ scholarship.discount_value }}%
+                {% else %}
+                    {{ scholarship.discount_value }} LRD
+                {% endif %}
+            </p>
+            <p><strong>Applies to Semester:</strong> {{ scholarship.get_applies_to_semester_display }}</p>
+            <p><strong>Max Students:</strong> {{ scholarship.max_students|default:"Unlimited" }}</p>
+            <p><strong>Status:</strong> 
+                {% if scholarship.is_active %}
+                    <span style="color: green;">Active</span>
+                {% else %}
+                    <span style="color: red;">Inactive</span>
+                {% endif %}
+            </p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-danger" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                    ✅ Yes, Delete Scholarship
+                </button>
+                <a href="{% url 'scholarship_management' %}" class="btn" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    ❌ Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.btn:hover {
+    opacity: 0.8;
+}
+</style>
+{% endblock %}

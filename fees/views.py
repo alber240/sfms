@@ -283,7 +283,8 @@ def add_scholarship(request):
             category=category,
             is_percentage=is_percentage,
             discount_value=discount_value,
-            applies_to_max_students=max_students,
+            applies_to_semester=applies_to_semester,  # ← ADD THIS - WAS MISSING!
+            max_students=max_students,                # ← FIXED: changed from 'applies_to_max_students'
             description=description,
         )
         
@@ -336,46 +337,136 @@ def delete_scholarship(request, pk):
     
     return render(request, 'fees/delete_scholarship.html', {'scholarship': scholarship})
 
+# In fees/views.py - update assign_scholarship function
+
 @login_required
 def assign_scholarship(request, student_id):
-    student = get_object_or_404(Student, id=student_id)
-    available_scholarships = ScholarshipType.objects.filter(is_active=True)
+    from .models import ScholarshipType, StudentScholarship, StudentFeeLedger, FeeStructure
+    from decimal import Decimal
+    
+    student = get_object_or_404(Student, pk=student_id)
     
     if request.method == 'POST':
-        scholarship_id = request.POST.get('scholarship')
+        scholarship_id = request.POST.get('scholarship_id')
         academic_year = request.POST.get('academic_year', '2024')
         
-        if scholarship_id:
-            scholarship = get_object_or_404(ScholarshipType, id=scholarship_id)
-            existing = StudentScholarship.objects.filter(
-                student=student,
-                scholarship=scholarship,
-                academic_year=academic_year,
-                is_active=True
-            ).first()
-            
-            if existing:
-                messages.warning(request, 'Student already has this scholarship')
-            else:
-                StudentScholarship.objects.create(
-                    student=student,
-                    scholarship=scholarship,
-                    academic_year=academic_year,
-                )
-                messages.success(request, f'Scholarship "{scholarship.name}" assigned to {student.full_name}!')
+        if not scholarship_id:
+            messages.error(request, 'Please select a scholarship.')
+            return redirect('assign_scholarship', student_id=student.id)
         
+        scholarship = get_object_or_404(ScholarshipType, pk=scholarship_id)
+        
+        # Check if student already has this scholarship
+        existing = StudentScholarship.objects.filter(
+            student=student,
+            scholarship=scholarship,
+            academic_year=academic_year,
+            is_active=True
+        ).first()
+        
+        if existing:
+            messages.warning(request, f'Student already has "{scholarship.name}" scholarship!')
+            return redirect('student_detail', pk=student.id)
+        
+        # Get or create fee ledger
+        ledger, created = StudentFeeLedger.objects.get_or_create(
+            student=student,
+            academic_year=academic_year,
+            defaults={
+                'semester1_total_lrd': 0,
+                'semester1_total_usd': 0,
+                'semester2_total_lrd': 0,
+                'semester2_total_usd': 0,
+                'semester1_paid_lrd': 0,
+                'semester1_paid_usd': 0,
+                'semester2_paid_lrd': 0,
+                'semester2_paid_usd': 0,
+                'discount_applied_lrd': 0,
+                'discount_applied_usd': 0,
+            }
+        )
+        
+        # Get ALL fee structures
+        all_fee_structures = FeeStructure.objects.filter(
+            class_assigned=student.class_assigned,
+            academic_year=academic_year,
+            student_type=student.student_type,
+            is_active=True
+        )
+        
+        # Get the categories this scholarship applies to
+        applies_to_categories = scholarship.applies_to_categories.all()
+        category_ids = [cat.id for cat in applies_to_categories]
+        
+        # Calculate total fees for categories that receive the scholarship
+        discount_total_lrd = Decimal('0')
+        discount_total_usd = Decimal('0')
+        
+        # First, calculate discount only for selected categories
+        if applies_to_categories:
+            # Only apply to selected categories
+            for fs in all_fee_structures:
+                if fs.category.id in category_ids:
+                    discount_total_lrd += fs.semester1_amount_lrd + fs.semester2_amount_lrd
+                    discount_total_usd += fs.semester1_amount_usd + fs.semester2_amount_usd
+        else:
+            # Apply to ALL categories (no specific categories selected)
+            for fs in all_fee_structures:
+                discount_total_lrd += fs.semester1_amount_lrd + fs.semester2_amount_lrd
+                discount_total_usd += fs.semester1_amount_usd + fs.semester2_amount_usd
+        
+        # Calculate the scholarship discount
+        if scholarship.is_percentage:
+            discount_lrd = discount_total_lrd * (Decimal(str(scholarship.discount_value)) / 100)
+            discount_usd = discount_total_usd * (Decimal(str(scholarship.discount_value)) / 100)
+        else:
+            discount_lrd = Decimal(str(scholarship.discount_value))
+            discount_usd = Decimal('0')
+        
+        # Set the discount in the ledger
+        ledger.discount_applied_lrd = discount_lrd
+        ledger.discount_applied_usd = discount_usd
+        ledger.save()
+        
+        # Create the scholarship assignment
+        student_scholarship = StudentScholarship.objects.create(
+            student=student,
+            scholarship=scholarship,
+            academic_year=academic_year,
+            is_active=True
+        )
+        
+        # Show which categories received the discount
+        if applies_to_categories:
+            category_names = [cat.name for cat in applies_to_categories]
+            category_text = ", ".join(category_names)
+        else:
+            category_text = "All Categories"
+        
+        messages.success(
+            request,
+            f'✅ Scholarship "{scholarship.name}" assigned to {student.full_name}! '
+            f'Applied to: {category_text} | '
+            f'LRD Discount: {discount_lrd:.0f} LRD | USD Discount: {discount_usd:.2f} USD'
+        )
         return redirect('student_detail', pk=student.id)
     
-    student_scholarships = StudentScholarship.objects.filter(student=student, is_active=True).select_related('scholarship')
+    # GET request - show the form
+    scholarships = ScholarshipType.objects.filter(is_active=True)
+    existing_scholarships = StudentScholarship.objects.filter(
+        student=student,
+        is_active=True
+    )
     
     context = {
         'student': student,
-        'available_scholarships': available_scholarships,
-        'student_scholarships': student_scholarships,
+        'scholarships': scholarships,
+        'existing_scholarships': existing_scholarships,
     }
     return render(request, 'fees/assign_scholarship.html', context)
 
-@login_required
+    
+
 def check_installment_reminders(request):
     today = date.today()
     reminders = InstallmentReminder.objects.filter(is_paid=False, due_date__gte=today)[:20]

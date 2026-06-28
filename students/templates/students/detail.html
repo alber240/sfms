@@ -4,210 +4,510 @@
 
 {% block content %}
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <!-- Header with actions -->
+    <div class="page-header">
         <h1>{{ student.full_name }}</h1>
-        <div>
+        <div class="action-buttons">
             {% if user.username != 'principal' %}
             <a href="{% url 'payment_entry' student.id %}" class="btn btn-primary">💰 Record Payment</a>
             <a href="{% url 'student_edit' student.id %}" class="btn btn-warning">✏️ Edit Student</a>
             <a href="{% url 'assign_scholarship' student.id %}" class="btn btn-success">🎓 Assign Scholarship</a>
             <a href="{% url 'student_delete' student.id %}" class="btn btn-danger">🗑️ Delete</a>
             {% endif %}
-            <a href="{% url 'student_list' %}" class="btn">← Back</a>
+            <a href="{% url 'student_list' %}" class="btn btn-secondary">← Back</a>
         </div>
     </div>
-    
+
     <!-- Student Information Card -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
-        
-        <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
+    <div class="card info-card">
+        <div class="card-header">
             <h3>Student Information</h3>
-            <p><strong>Admission #:</strong> {{ student.admission_number }}</p>
-            <p><strong>Class:</strong> {{ student.get_class_name }}</p>
-            <p><strong>Student Type:</strong> 
-                {% if student.student_type == 'NEW' %}
-                    🆕 New Student (First time)
-                {% else %}
-                    🔄 Returning Student
-                {% endif %}
-            </p>
-            <p><strong>Parent:</strong> {{ student.parent_name|default:"-" }}</p>
-            <p><strong>Phone:</strong> {{ student.parent_phone|default:"-" }}</p>
-            <p><strong>Enrollment Date:</strong> {{ student.enrollment_date|date:"Y-m-d" }}</p>
         </div>
-        
-        <div class="card" style="background: white; padding: 20px; border-radius: 10px;">
-            <h3>💰 Summary</h3>
-            <p><strong>Total Due:</strong> {{ total_due_lrd|floatformat:0 }} LRD / {{ total_due_usd|floatformat:2 }} USD</p>
-            <p><strong>Total Paid:</strong> {{ total_paid_lrd|floatformat:0 }} LRD / {{ total_paid_usd|floatformat:2 }} USD</p>
-            <p><strong>Total Balance:</strong> 
-                <span style="color: {% if total_balance_lrd > 0 %}#c62828{% else %}#2e7d32{% endif %}; font-size: 20px; font-weight: bold;">
-                    {{ total_balance_lrd|floatformat:0 }} LRD
+        <div class="card-body info-grid">
+            <div class="info-item">
+                <label>Admission #</label>
+                <span>{{ student.admission_number }}</span>
+            </div>
+            <div class="info-item">
+                <label>Class</label>
+                <span>{{ student.get_class_name }}</span>
+            </div>
+            <div class="info-item">
+                <label>Student Type</label>
+                <span>
+                    {% if student.student_type == 'NEW' %}
+                        🆕 New Student
+                    {% else %}
+                        🔄 Returning Student
+                    {% endif %}
                 </span>
-            </p>
+            </div>
+            <div class="info-item">
+                <label>Parent</label>
+                <span>{{ student.parent_name|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <label>Phone</label>
+                <span>{{ student.parent_phone|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <label>Enrollment Date</label>
+                <span>{{ student.enrollment_date|date:"Y-m-d" }}</span>
+            </div>
         </div>
     </div>
-    
-    <!-- Semester-Based Fee Breakdown Table -->
-    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-        <h3>💰 Fee Breakdown by Category & Semester</h3>
-        
-        <table class="table">
-            <thead>
-                <tr>
-                    <th rowspan="2">Fee Category</th>
-                    <th colspan="3">1st Semester</th>
-                    <th colspan="3">2nd Semester</th>
-                    <th rowspan="2">Total Due</th>
-                    <th rowspan="2">Total Paid</th>
-                    <th rowspan="2">Status</th>
-                </tr>
-                <tr style="background: #f0f0f0;">
-                    <th>Due (LRD)</th>
-                    <th>Paid (LRD)</th>
-                    <th>Status</th>
-                    <th>Due (LRD)</th>
-                    <th>Paid (LRD)</th>
-                    <th>Status</th>
-                 </tr>
-            </thead>
-            <tbody>
-                {% for fee in fee_breakdown %}
-                <tr>
-                    <td><strong>{{ fee.category.name }}</strong><br><small>{{ fee.category.code }}</small></a>
-                    <!-- Semester 1 -->
-                    <td>{{ fee.sem1_due_lrd|floatformat:2 }}</a>
-                    <td>{{ fee.sem1_paid_lrd|floatformat:2 }}</a>
-                    <td>
-                        {% if fee.sem1_paid_lrd >= fee.sem1_due_lrd and fee.sem1_due_lrd > 0 %}
-                            <span style="color: green;">✓ Paid</span>
-                        {% elif fee.sem1_paid_lrd > 0 %}
-                            <span style="color: orange;">⚠ Partial</span>
-                        {% elif fee.sem1_due_lrd > 0 %}
-                            <span style="color: red;">⏳ Pending</span>
-                        {% else %}
-                            <span style="color: #999;">-</span>
-                        {% endif %}
-                    </a>
-                    <!-- Semester 2 -->
-                    <td>{{ fee.sem2_due_lrd|floatformat:2 }}</a>
-                    <td>{{ fee.sem2_paid_lrd|floatformat:2 }}</a>
-                    <td>
-                        {% if fee.sem2_paid_lrd >= fee.sem2_due_lrd and fee.sem2_due_lrd > 0 %}
-                            <span style="color: green;">✓ Paid</span>
-                        {% elif fee.sem2_paid_lrd > 0 %}
-                            <span style="color: orange;">⚠ Partial</span>
-                        {% elif fee.sem2_due_lrd > 0 %}
-                            <span style="color: red;">⏳ Pending</span>
-                        {% else %}
-                            <span style="color: #999;">-</span>
-                        {% endif %}
-                    </a>
-                    <!-- Totals -->
-                    <td>{{ fee.total_due_lrd|floatformat:2 }}</a>
-                    <td>{{ fee.total_paid_lrd|floatformat:2 }}</a>
-                    <td>
-                        {% if fee.total_paid_lrd >= fee.total_due_lrd and fee.total_due_lrd > 0 %}
-                            <span style="color: green; font-weight: bold;">✓ Fully Paid</span>
-                        {% elif fee.total_paid_lrd > 0 %}
-                            <span style="color: orange; font-weight: bold;">⚠ Partial</span>
-                        {% elif fee.total_due_lrd > 0 %}
-                            <span style="color: red; font-weight: bold;">Pending</span>
-                        {% else %}
-                            <span style="color: #999;">N/A</span>
-                        {% endif %}
-                    </a>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot style="background: #f5f5f5; font-weight: bold;">
-                <tr>
-                    <td><strong>TOTAL</strong></a>
-                    <td><strong>{{ total_sem1_due_lrd|floatformat:2 }}</strong></a>
-                    <td><strong>{{ total_sem1_paid_lrd|floatformat:2 }}</strong></a>
-                    <td></a>
-                    <td><strong>{{ total_sem2_due_lrd|floatformat:2 }}</strong></a>
-                    <td><strong>{{ total_sem2_paid_lrd|floatformat:2 }}</strong></a>
-                    <td></a>
-                    <td><strong>{{ total_due_lrd|floatformat:2 }}</strong></a>
-                    <td><strong>{{ total_paid_lrd|floatformat:2 }}</strong></a>
-                    <td>
-                        {% if total_balance_lrd == 0 %}
-                            <span style="color: green;">✓ Fully Paid</span>
-                        {% elif total_paid_lrd > 0 %}
-                            <span style="color: orange;">⚠ Partial</span>
-                        {% else %}
-                            <span style="color: red;">Pending</span>
-                        {% endif %}
-                    </a>
-                </tr>
-            </tfoot>
-        </table>
+
+    <!-- Summary Card -->
+    <div class="card summary-card">
+        <div class="card-header">
+            <h3>💰 Financial Summary</h3>
+        </div>
+        <div class="card-body">
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <label>Total Due</label>
+                    <span class="amount">{{ total_due_lrd|floatformat:0 }} LRD</span>
+                    <span class="amount-usd">{{ total_due_usd|floatformat:2 }} USD</span>
+                </div>
+                
+                {% if has_scholarship %}
+                <div class="summary-item scholarship">
+                    <label>🎓 Scholarship</label>
+                    <span class="scholarship-name">{{ scholarship_name }}</span>
+                    <span class="scholarship-discount">-{{ discount_lrd|floatformat:0 }} LRD ({{ scholarship_percent|floatformat:0 }}%)</span>
+                </div>
+                <div class="summary-item after-scholarship">
+                    <label>Amount After Scholarship</label>
+                    <span class="amount">{{ remaining_balance_lrd|floatformat:0 }} LRD</span>
+                    <span class="amount-usd">{{ remaining_balance_usd|floatformat:2 }} USD</span>
+                </div>
+                {% endif %}
+                
+                <div class="summary-item">
+                    <label>Total Paid</label>
+                    <span class="amount">{{ total_paid_lrd|floatformat:0 }} LRD</span>
+                    <span class="amount-usd">{{ total_paid_usd|floatformat:2 }} USD</span>
+                </div>
+                
+                <div class="summary-item balance">
+                    <label>Remaining Balance</label>
+                    <span class="amount {% if remaining_balance_lrd > 0 %}negative{% else %}positive{% endif %}">
+                        {{ remaining_balance_lrd|floatformat:0 }} LRD
+                    </span>
+                    <span class="amount-usd {% if remaining_balance_usd > 0 %}negative{% else %}positive{% endif %}">
+                        {{ remaining_balance_usd|floatformat:2 }} USD
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
-    
+
+    <!-- Fee Breakdown Table -->
+    <div class="card table-card">
+        <div class="card-header">
+            <h3>💰 Fee Breakdown by Category & Semester</h3>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Fee Category</th>
+                        <th colspan="4" class="text-center">1st Semester</th>
+                        <th colspan="4" class="text-center">2nd Semester</th>
+                        <th colspan="4" class="text-center">Total</th>
+                    </tr>
+                    <tr>
+                        <th>Due (LRD)</th>
+                        <th>Paid (LRD)</th>
+                        <th>Due (USD)</th>
+                        <th>Paid (USD)</th>
+                        <th>Due (LRD)</th>
+                        <th>Paid (LRD)</th>
+                        <th>Due (USD)</th>
+                        <th>Paid (USD)</th>
+                        <th>Due (LRD)</th>
+                        <th>Paid (LRD)</th>
+                        <th>Due (USD)</th>
+                        <th>Paid (USD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fee in fee_breakdown %}
+                    <tr>
+                        <td>
+                            <strong>{{ fee.category.name }}</strong>
+                            <br><small>{{ fee.category.code }}</small>
+                        </td>
+                        <!-- Semester 1 -->
+                        <td>{{ fee.sem1_due_lrd|floatformat:2 }}</td>
+                        <td>{{ fee.sem1_paid_lrd|floatformat:2 }}</td>
+                        <td>{{ fee.sem1_due_usd|floatformat:2 }}</td>
+                        <td>{{ fee.sem1_paid_usd|floatformat:2 }}</td>
+                        <!-- Semester 2 -->
+                        <td>{{ fee.sem2_due_lrd|floatformat:2 }}</td>
+                        <td>{{ fee.sem2_paid_lrd|floatformat:2 }}</td>
+                        <td>{{ fee.sem2_due_usd|floatformat:2 }}</td>
+                        <td>{{ fee.sem2_paid_usd|floatformat:2 }}</td>
+                        <!-- Totals -->
+                        <td>{{ fee.total_due_lrd|floatformat:2 }}</td>
+                        <td>{{ fee.total_paid_lrd|floatformat:2 }}</td>
+                        <td>{{ fee.total_due_usd|floatformat:2 }}</td>
+                        <td>{{ fee.total_paid_usd|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>TOTAL</strong></td>
+                        <td><strong>{{ total_sem1_due_lrd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem1_paid_lrd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem1_due_usd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem1_paid_usd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem2_due_lrd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem2_paid_lrd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem2_due_usd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_sem2_paid_usd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_due_lrd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_paid_lrd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_due_usd|floatformat:2 }}</strong></td>
+                        <td><strong>{{ total_paid_usd|floatformat:2 }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <div class="status-row">
+                <div class="status-item">
+                    <strong>Overall Status:</strong>
+                    {% if total_balance_lrd == 0 and total_balance_usd == 0 %}
+                        <span class="status-paid">✅ Fully Paid</span>
+                    {% elif total_paid_lrd > 0 or total_paid_usd > 0 %}
+                        <span class="status-partial">⚠️ Partial Payment</span>
+                    {% else %}
+                        <span class="status-pending">⏳ No Payment Made</span>
+                    {% endif %}
+                </div>
+                <div class="status-item">
+                    <strong>Total Balance:</strong>
+                    <span class="balance-amount {% if remaining_balance_lrd > 0 %}negative{% else %}positive{% endif %}">
+                        {{ remaining_balance_lrd|floatformat:0 }} LRD / {{ remaining_balance_usd|floatformat:2 }} USD
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Payment History -->
-    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-        <h3>📜 Payment History</h3>
-        {% if receipts %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Receipt #</th>
-                    <th>Date</th>
-                    <th>Semester</th>
-                    <th>Fee Category</th>
-                    <th>Amount (LRD)</th>
-                    <th>Method</th>
-                    <th>Print</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for receipt in receipts %}
-                <tr>
-                    <td>#{{ receipt.receipt_number }}</a>
-                    <td>{{ receipt.payment_date|date:"Y-m-d" }}</a>
-                    <td>
-                        {% if receipt.payment_period == 'FIRST' %}
-                            1st Semester
-                        {% elif receipt.payment_period == 'SECOND' %}
-                            2nd Semester
-                        {% else %}
-                            Yearly
-                        {% endif %}
-                    </a>
-                    <td>
-                        {% for alloc in receipt.allocations.all %}
-                            {{ alloc.fee_category.name }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    </a>
-                    <td>{{ receipt.amount_lrd|floatformat:2 }}</a>
-                    <td>{{ receipt.get_payment_method_display }}</a>
-                    <td><a href="{% url 'receipt_print' receipt.id %}" target="_blank" class="btn-small">🖨️ Print</a></a>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="text-align: center; color: #999;">No payment records found.</p>
-        {% endif %}
-    </div>
-    
-    <div style="margin-top: 20px;">
-        <a href="{% url 'student_list' %}" class="btn">← Back to Students</a>
+    <div class="card history-card">
+        <div class="card-header">
+            <h3>📜 Payment History</h3>
+        </div>
+        <div class="card-body table-responsive">
+            {% if receipts %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Date</th>
+                        <th>Semester</th>
+                        <th>Fee Category</th>
+                        <th>Amount (LRD)</th>
+                        <th>Amount (USD)</th>
+                        <th>Method</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for receipt in receipts %}
+                    <tr>
+                        <td><strong>#{{ receipt.receipt_number }}</strong></td>
+                        <td>{{ receipt.payment_date|date:"Y-m-d" }}</td>
+                        <td>
+                            {% if receipt.payment_period == 'FIRST' %}
+                                1st Semester
+                            {% elif receipt.payment_period == 'SECOND' %}
+                                2nd Semester
+                            {% else %}
+                                Yearly
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% for alloc in receipt.allocations.all %}
+                                {{ alloc.fee_category.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>{{ receipt.amount_lrd|floatformat:2 }}</td>
+                        <td>{{ receipt.amount_usd|floatformat:2 }}</td>
+                        <td>{{ receipt.get_payment_method_display }}</td>
+                        <td>
+                            <a href="{% url 'receipt_print' receipt.id %}" target="_blank" class="btn-small">🖨️ Print</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-message">No payment records found.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <style>
-.card { box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-.btn { display: inline-block; padding: 8px 16px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; margin: 2px; }
-.btn-primary { background: #1e3c72; }
+/* Container & Layout */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.page-header h1 {
+    font-size: 28px;
+    color: #1e3c72;
+    margin: 0;
+}
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+.card-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+.card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1e3c72;
+}
+.card-body {
+    padding: 20px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-primary { background: #1e3c72; color: white; }
+.btn-primary:hover { background: #2a5298; }
 .btn-warning { background: #ffc107; color: #856404; }
-.btn-danger { background: #dc3545; }
-.btn-success { background: #28a745; }
-.btn-small { display: inline-block; padding: 4px 10px; font-size: 12px; background: #1e3c72; color: white; text-decoration: none; border-radius: 3px; }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: top; }
-.table th { background: #f5f5f5; font-weight: bold; }
-tfoot td { border-top: 2px solid #ddd; background: #f5f5f5; }
+.btn-warning:hover { background: #e0a800; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-danger:hover { background: #c82333; }
+.btn-success { background: #28a745; color: white; }
+.btn-success:hover { background: #218838; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #5a6268; }
+.btn-small {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    background: #1e3c72;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+}
+.btn-small:hover { background: #2a5298; }
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+.info-item label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.info-item span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1e3c72;
+}
+
+/* Summary Grid */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+.summary-item {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+.summary-item label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+.summary-item .amount {
+    font-size: 22px;
+    font-weight: bold;
+    color: #1e3c72;
+}
+.summary-item .amount-usd {
+    font-size: 14px;
+    color: #666;
+    display: block;
+}
+.summary-item .amount.negative { color: #c62828; }
+.summary-item .amount.positive { color: #2e7d32; }
+.summary-item .amount-usd.negative { color: #c62828; }
+.summary-item .amount-usd.positive { color: #2e7d32; }
+
+.summary-item.scholarship {
+    background: #e8f5e9;
+}
+.summary-item.scholarship .scholarship-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1e3c72;
+}
+.summary-item.scholarship .scholarship-discount {
+    font-size: 16px;
+    color: #2e7d32;
+}
+.summary-item.after-scholarship {
+    background: #e3f2fd;
+}
+.summary-item.balance {
+    background: #fff3e0;
+}
+
+/* Tables */
+.table-responsive {
+    overflow-x: auto;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.table th, .table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+.table th {
+    background: #f5f5f5;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+.table th.text-center {
+    text-align: center;
+}
+.table tfoot td {
+    border-top: 2px solid #ddd;
+    background: #f5f5f5;
+    font-weight: bold;
+}
+.table tfoot td strong {
+    color: #1e3c72;
+}
+.table tr:hover {
+    background: #fafafa;
+}
+
+/* Status Row */
+.status-row {
+    display: flex;
+    gap: 30px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    flex-wrap: wrap;
+}
+.status-item {
+    font-size: 14px;
+}
+.status-paid { color: #2e7d32; font-weight: bold; }
+.status-partial { color: #e65100; font-weight: bold; }
+.status-pending { color: #c62828; font-weight: bold; }
+.balance-amount {
+    font-size: 18px;
+    font-weight: bold;
+}
+.balance-amount.negative { color: #c62828; }
+.balance-amount.positive { color: #2e7d32; }
+
+/* Empty Message */
+.empty-message {
+    text-align: center;
+    color: #999;
+    padding: 30px 0;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .page-header h1 {
+        text-align: center;
+    }
+    .action-buttons {
+        justify-content: center;
+    }
+    .info-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .summary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .status-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+@media (max-width: 480px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 {% endblock %}

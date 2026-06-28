@@ -1,14 +1,18 @@
 {
-    "school_name": "Monrovia High School",
-    "school_email": "info@monroviahigh.edu.lr",
-    "principal_name": "Dr. James Kollie",
-    "license_key": "SFMS-TEST-001",
-    "issued_date": "2026-01-01",
-    "expiry_date": "2036-01-01",
-    "duration": "10 Years (Demo)",
+    "school_name": "Test School Liberia",
+    "school_email": "test@school.com",
+    "license_key": "SFMS-Test_Schoo-37EE1DD8",
+    "issued_date": "2026-05-16",
+    "expiry_date": "2036-05-31",
+    "supabase_url": "URL: https://test123.supabase.co",
+    "supabase_key": "test-key-123456",
+    "features": [
+        "all"
+    ],
+    "max_students": 1000,
+    "checksum": "5a957e021e39acce",
+    "duration": "10 YEARS (LIFETIME)",
+    "renewed_on": "2026-06-03",
     "developer": "Albert A. Allen",
-    "developer_contact": "allen.tech.africa@gmail.com",
-    "developer_phone": "+250 790 362 843",
-    "version": "SFMS 2.0",
-    "features": ["full_access"]
+    "developer_contact": "allen.tech.africa@gmail.com"
 }

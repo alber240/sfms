@@ -114,7 +114,7 @@ def student_add(request):
 
 @login_required
 def student_detail(request, pk):
-    from fees.models import FeeCategory, FeeStructure, StudentFeeLedger
+    from fees.models import FeeCategory, FeeStructure, StudentFeeLedger, StudentScholarship
     from receipts.models import Receipt, PaymentAllocation
     from decimal import Decimal
     
@@ -135,32 +135,87 @@ def student_detail(request, pk):
         is_active=True
     ).select_related('category')
     
-    # Build fee breakdown with semester data
-    fee_breakdown = []
-    total_sem1_due_lrd = Decimal('0')
-    total_sem1_paid_lrd = Decimal('0')
-    total_sem2_due_lrd = Decimal('0')
-    total_sem2_paid_lrd = Decimal('0')
-    total_due_lrd = Decimal('0')
-    total_paid_lrd = Decimal('0')
+    # Get or create fee ledger
+    ledger, created = StudentFeeLedger.objects.get_or_create(
+        student=student,
+        academic_year=academic_year,
+        defaults={
+            'semester1_total_lrd': 0,
+            'semester1_total_usd': 0,
+            'semester2_total_lrd': 0,
+            'semester2_total_usd': 0,
+            'semester1_paid_lrd': 0,
+            'semester1_paid_usd': 0,
+            'semester2_paid_lrd': 0,
+            'semester2_paid_usd': 0,
+            'discount_applied_lrd': 0,
+            'discount_applied_usd': 0,
+        }
+    )
     
     # Get all receipts for this student
     receipts = Receipt.objects.filter(student=student, is_voided=False).order_by('-payment_date')
     
+    # Get scholarship and its selected categories
+    scholarship = StudentScholarship.objects.filter(student=student, academic_year=academic_year, is_active=True).first()
+    
+    # Get the category IDs that the scholarship applies to
+    scholarship_category_ids = []
+    if scholarship:
+        scholarship_category_ids = list(scholarship.scholarship.applies_to_categories.values_list('id', flat=True))
+    
+    # Build fee breakdown
+    fee_breakdown = []
+    total_sem1_due_lrd = Decimal('0')
+    total_sem1_due_usd = Decimal('0')
+    total_sem1_paid_lrd = Decimal('0')
+    total_sem1_paid_usd = Decimal('0')
+    total_sem2_due_lrd = Decimal('0')
+    total_sem2_due_usd = Decimal('0')
+    total_sem2_paid_lrd = Decimal('0')
+    total_sem2_paid_usd = Decimal('0')
+    total_due_lrd = Decimal('0')
+    total_due_usd = Decimal('0')
+    total_paid_lrd = Decimal('0')
+    total_paid_usd = Decimal('0')
+    
+    # Calculate total original fees for categories that receive scholarship (for LRD)
+    total_eligible_lrd = Decimal('0')
+    total_eligible_usd = Decimal('0')
+    
+    for fs in fee_structures:
+        # Check if this category is eligible for scholarship
+        if scholarship_category_ids and fs.category.id not in scholarship_category_ids:
+            # This category does NOT receive scholarship - use full amount
+            continue
+        
+        # This category receives scholarship
+        total_eligible_lrd += fs.semester1_amount_lrd + fs.semester2_amount_lrd
+        total_eligible_usd += fs.semester1_amount_usd + fs.semester2_amount_usd
+    
     for category in fee_categories:
-        # Get fee structure for this category
         fs = fee_structures.filter(category=category).first()
         
+        # Check if this category is eligible for scholarship
+        is_eligible = False
+        if scholarship:
+            is_eligible = (category.id in scholarship_category_ids)
+        
         if fs:
-            # Semester 1 amounts
-            sem1_due_lrd = fs.semester1_amount_lrd
-            sem1_due_usd = fs.semester1_amount_usd
+            sem1_due_lrd = fs.semester1_amount_lrd or Decimal('0')
+            sem2_due_lrd = fs.semester2_amount_lrd or Decimal('0')
+            sem1_due_usd = fs.semester1_amount_usd or Decimal('0')
+            sem2_due_usd = fs.semester2_amount_usd or Decimal('0')
             
-            # Semester 2 amounts
-            sem2_due_lrd = fs.semester2_amount_lrd
-            sem2_due_usd = fs.semester2_amount_usd
+            # Apply discount ONLY if this category is eligible
+            if is_eligible and scholarship:
+                # Apply 50% discount to this category's fees
+                sem1_due_lrd = sem1_due_lrd / 2
+                sem2_due_lrd = sem2_due_lrd / 2
+                sem1_due_usd = sem1_due_usd / 2
+                sem2_due_usd = sem2_due_usd / 2
             
-            # Calculate paid amounts from allocations
+            # Calculate paid amounts from receipts
             sem1_paid_lrd = Decimal('0')
             sem1_paid_usd = Decimal('0')
             sem2_paid_lrd = Decimal('0')
@@ -170,25 +225,22 @@ def student_detail(request, pk):
                 if not receipt.is_legacy:
                     allocations = receipt.allocations.filter(fee_category=category)
                     for alloc in allocations:
-                        # Check payment period from receipt
                         if receipt.payment_period == 'FIRST':
-                            sem1_paid_lrd += alloc.amount_lrd
-                            sem1_paid_usd += alloc.amount_usd
+                            sem1_paid_lrd += alloc.amount_lrd or Decimal('0')
+                            sem1_paid_usd += alloc.amount_usd or Decimal('0')
                         elif receipt.payment_period == 'SECOND':
-                            sem2_paid_lrd += alloc.amount_lrd
-                            sem2_paid_usd += alloc.amount_usd
-                        else:  # YEARLY - split equally
-                            sem1_paid_lrd += alloc.amount_lrd / 2
-                            sem2_paid_lrd += alloc.amount_lrd / 2
-                            sem1_paid_usd += alloc.amount_usd / 2
-                            sem2_paid_usd += alloc.amount_usd / 2
+                            sem2_paid_lrd += alloc.amount_lrd or Decimal('0')
+                            sem2_paid_usd += alloc.amount_usd or Decimal('0')
+                        else:
+                            sem1_paid_lrd += (alloc.amount_lrd or Decimal('0')) / 2
+                            sem2_paid_lrd += (alloc.amount_lrd or Decimal('0')) / 2
+                            sem1_paid_usd += (alloc.amount_usd or Decimal('0')) / 2
+                            sem2_paid_usd += (alloc.amount_usd or Decimal('0')) / 2
             
-            total_due_category = sem1_due_lrd + sem2_due_lrd
-            total_paid_category = sem1_paid_lrd + sem2_paid_lrd
-            
-            # Determine semester statuses
-            sem1_status = 'paid' if sem1_paid_lrd >= sem1_due_lrd and sem1_due_lrd > 0 else ('partial' if sem1_paid_lrd > 0 else 'pending')
-            sem2_status = 'paid' if sem2_paid_lrd >= sem2_due_lrd and sem2_due_lrd > 0 else ('partial' if sem2_paid_lrd > 0 else 'pending')
+            total_due_category_lrd = sem1_due_lrd + sem2_due_lrd
+            total_due_category_usd = sem1_due_usd + sem2_due_usd
+            total_paid_category_lrd = sem1_paid_lrd + sem2_paid_lrd
+            total_paid_category_usd = sem1_paid_usd + sem2_paid_usd
             
             fee_breakdown.append({
                 'category': category,
@@ -196,57 +248,97 @@ def student_detail(request, pk):
                 'sem1_due_usd': float(sem1_due_usd),
                 'sem1_paid_lrd': float(sem1_paid_lrd),
                 'sem1_paid_usd': float(sem1_paid_usd),
-                'sem1_status': sem1_status,
                 'sem2_due_lrd': float(sem2_due_lrd),
                 'sem2_due_usd': float(sem2_due_usd),
                 'sem2_paid_lrd': float(sem2_paid_lrd),
                 'sem2_paid_usd': float(sem2_paid_usd),
-                'sem2_status': sem2_status,
-                'total_due_lrd': float(total_due_category),
-                'total_paid_lrd': float(total_paid_category),
+                'total_due_lrd': float(total_due_category_lrd),
+                'total_due_usd': float(total_due_category_usd),
+                'total_paid_lrd': float(total_paid_category_lrd),
+                'total_paid_usd': float(total_paid_category_usd),
             })
             
             total_sem1_due_lrd += sem1_due_lrd
+            total_sem1_due_usd += sem1_due_usd
             total_sem1_paid_lrd += sem1_paid_lrd
+            total_sem1_paid_usd += sem1_paid_usd
             total_sem2_due_lrd += sem2_due_lrd
+            total_sem2_due_usd += sem2_due_usd
             total_sem2_paid_lrd += sem2_paid_lrd
-            total_due_lrd += total_due_category
-            total_paid_lrd += total_paid_category
+            total_sem2_paid_usd += sem2_paid_usd
+            total_due_lrd += total_due_category_lrd
+            total_due_usd += total_due_category_usd
+            total_paid_lrd += total_paid_category_lrd
+            total_paid_usd += total_paid_category_usd
         else:
-            # No fee structure for this category
             fee_breakdown.append({
                 'category': category,
                 'sem1_due_lrd': 0,
                 'sem1_due_usd': 0,
                 'sem1_paid_lrd': 0,
                 'sem1_paid_usd': 0,
-                'sem1_status': 'none',
                 'sem2_due_lrd': 0,
                 'sem2_due_usd': 0,
                 'sem2_paid_lrd': 0,
                 'sem2_paid_usd': 0,
-                'sem2_status': 'none',
                 'total_due_lrd': 0,
+                'total_due_usd': 0,
                 'total_paid_lrd': 0,
+                'total_paid_usd': 0,
             })
     
-    total_balance_lrd = total_due_lrd - total_paid_lrd
-    total_balance_usd = 0  # Calculate similarly if needed
+    # Convert totals to float
+    total_due_lrd_float = float(total_due_lrd)
+    total_due_usd_float = float(total_due_usd)
+    total_paid_lrd_float = float(total_paid_lrd)
+    total_paid_usd_float = float(total_paid_usd)
+    
+    # Calculate scholarship discount (for display)
+    discount_lrd = float(ledger.discount_applied_lrd) if ledger.discount_applied_lrd else 0
+    discount_usd = float(ledger.discount_applied_usd) if ledger.discount_applied_usd else 0
+    
+    # Calculate scholarship percentage
+    scholarship_percent = 0
+    if scholarship and scholarship.scholarship.is_percentage:
+        scholarship_percent = float(scholarship.scholarship.discount_value)
+    
+    remaining_balance_lrd = total_due_lrd_float - total_paid_lrd_float
+    remaining_balance_usd = total_due_usd_float - total_paid_usd_float
+    
+    total_balance_lrd = total_due_lrd_float - total_paid_lrd_float
+    total_balance_usd = total_due_usd_float - total_paid_usd_float
+    
+    scholarship_name = scholarship.scholarship.name if scholarship else None
+    scholarship_discount = float(scholarship.scholarship.discount_value) if scholarship else 0
     
     context = {
         'student': student,
         'fee_breakdown': fee_breakdown,
         'receipts': receipts,
-        'total_due_lrd': float(total_due_lrd),
-        'total_paid_lrd': float(total_paid_lrd),
-        'total_balance_lrd': float(total_balance_lrd),
+        'total_due_lrd': total_due_lrd_float,
+        'total_due_usd': total_due_usd_float,
+        'total_paid_lrd': total_paid_lrd_float,
+        'total_paid_usd': total_paid_usd_float,
+        'total_balance_lrd': total_balance_lrd,
+        'total_balance_usd': total_balance_usd,
         'total_sem1_due_lrd': float(total_sem1_due_lrd),
+        'total_sem1_due_usd': float(total_sem1_due_usd),
         'total_sem1_paid_lrd': float(total_sem1_paid_lrd),
+        'total_sem1_paid_usd': float(total_sem1_paid_usd),
         'total_sem2_due_lrd': float(total_sem2_due_lrd),
+        'total_sem2_due_usd': float(total_sem2_due_usd),
         'total_sem2_paid_lrd': float(total_sem2_paid_lrd),
+        'total_sem2_paid_usd': float(total_sem2_paid_usd),
+        'discount_lrd': discount_lrd,
+        'discount_usd': discount_usd,
+        'scholarship_percent': scholarship_percent,
+        'remaining_balance_lrd': remaining_balance_lrd,
+        'remaining_balance_usd': remaining_balance_usd,
+        'scholarship_name': scholarship_name,
+        'scholarship_discount': scholarship_discount,
+        'has_scholarship': scholarship is not None,
     }
     return render(request, 'students/detail.html', context)
-
 @login_required
 def student_edit(request, pk):
     from fees.models import FeeStructure, StudentFeeLedger
