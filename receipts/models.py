@@ -51,23 +51,13 @@ class Receipt(models.Model):
     
     def __str__(self):
         return f"Receipt #{self.receipt_number} - {self.student.full_name}"
-class BatchPaymentSession(models.Model):
-    """Track batch payment sessions"""
-    session_date = models.DateField(auto_now_add=True)
-    created_by = models.CharField(max_length=50, default='accountant')
-    total_receipts = models.IntegerField(default=0)
-    total_amount_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_amount_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    is_completed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Batch {self.id} - {self.session_date} - {self.total_receipts} receipts"
-    
 class PaymentAllocation(models.Model):
     """Track which fee category each payment applies to"""
     receipt = models.ForeignKey(Receipt, on_delete=models.CASCADE, related_name='allocations')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, blank=True)
     fee_category = models.ForeignKey('fees.FeeCategory', on_delete=models.CASCADE)
+    academic_year = models.CharField(max_length=10, default='2024-2025')
+    semester = models.CharField(max_length=10, choices=Receipt.PAYMENT_PERIOD_CHOICES, default='FIRST')
     amount_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)

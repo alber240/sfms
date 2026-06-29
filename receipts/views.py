@@ -10,7 +10,7 @@ from fees.models import FeeCategory
 from fees.views import get_active_academic_year
 from students.models import Student
 from fees.models import StudentFeeLedger
-from .models import Receipt, ReceiptSequence, BatchPaymentSession
+from .models import Receipt, ReceiptSequence
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -239,14 +239,14 @@ def quick_payment(request):
 
 
 @login_required
-@login_required
 def batch_payment(request):
     """Record multiple students' payments at once"""
     from decimal import Decimal
+    from .models import Receipt, ReceiptSequence, PaymentAllocation
+    from fees.models import FeeCategory, StudentFeeLedger
     
     students = []
     search = ''
-    selected_students = []
     payment_period = request.POST.get('payment_period', 'FIRST')
     academic_year = request.POST.get('academic_year', '2024-2025')
     fee_categories = FeeCategory.objects.filter(is_active=True)
@@ -272,7 +272,8 @@ def batch_payment(request):
                     elif payment_period == 'SECOND':
                         student.balance = float(ledger.semester2_total_lrd - ledger.semester2_paid_lrd)
                     else:
-                        student.balance = float((ledger.semester1_total_lrd + ledger.semester2_total_lrd) - (ledger.semester1_paid_lrd + ledger.semester2_paid_lrd))
+                        student.balance = float((ledger.semester1_total_lrd + ledger.semester2_total_lrd) - 
+                                               (ledger.semester1_paid_lrd + ledger.semester2_paid_lrd))
                 else:
                     student.balance = 0
     
@@ -298,12 +299,26 @@ def batch_payment(request):
             messages.success(request, 'Student removed from batch')
         return redirect('batch_payment')
     
-    # Handle processing batch payments
+    # ============================================================
+    # Handle processing batch payments (FIXED)
+    # ============================================================
     if request.method == 'POST' and 'process_batch' in request.POST:
         batch_students = request.session.get('batch_students', [])
         payment_method = request.POST.get('payment_method', 'CASH')
         payment_period = request.POST.get('payment_period', 'FIRST')
         academic_year = request.POST.get('academic_year', '2024-2025')
+        fee_category_id = request.POST.get('fee_category')
+        
+        # Validate fee category
+        if not fee_category_id:
+            messages.error(request, 'Please select a fee category.')
+            return redirect('batch_payment')
+        
+        try:
+            fee_category = FeeCategory.objects.get(id=int(fee_category_id))
+        except (ValueError, FeeCategory.DoesNotExist):
+            messages.error(request, 'Invalid fee category selected.')
+            return redirect('batch_payment')
         
         receipts_created = 0
         total_lrd = Decimal('0')
@@ -317,17 +332,39 @@ def batch_payment(request):
             if amount_lrd == 0 and amount_usd == 0:
                 continue
             
+            # Get next receipt number using the model's method
+            receipt_number = ReceiptSequence.get_next_number()
+            
             # Create receipt
             receipt = Receipt.objects.create(
                 student=student,
+                receipt_number=receipt_number,
                 payment_date=date.today(),
                 amount_lrd=amount_lrd,
                 amount_usd=amount_usd,
                 payment_method=payment_method,
+                payment_period=payment_period,
+                is_legacy=False,
+                is_voided=False
+            )
+            
+            # ============================================================
+            # FIX: Create PaymentAllocation record (THIS WAS MISSING!)
+            # ============================================================
+            PaymentAllocation.objects.create(
+                receipt=receipt,
+                fee_category=fee_category,
+                amount_lrd=amount_lrd,
+                amount_usd=amount_usd
             )
             
             # Update ledger
-            ledger = StudentFeeLedger.objects.filter(student=student).first()
+            ledger = StudentFeeLedger.objects.filter(student=student, academic_year=academic_year).first()
+            
+            if not ledger:
+                # If no ledger exists, try without academic_year filter
+                ledger = StudentFeeLedger.objects.filter(student=student).first()
+            
             if ledger:
                 if payment_period == 'FIRST':
                     ledger.semester1_paid_lrd += amount_lrd
@@ -376,7 +413,8 @@ def batch_payment(request):
                 elif payment_period == 'SECOND':
                     student.due = float(ledger.semester2_total_lrd - ledger.semester2_paid_lrd)
                 else:
-                    student.due = float((ledger.semester1_total_lrd + ledger.semester2_total_lrd) - (ledger.semester1_paid_lrd + ledger.semester2_paid_lrd))
+                    student.due = float((ledger.semester1_total_lrd + ledger.semester2_total_lrd) - 
+                                       (ledger.semester1_paid_lrd + ledger.semester2_paid_lrd))
             else:
                 student.due = 0
     
