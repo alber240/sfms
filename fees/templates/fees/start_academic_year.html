@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Start New Academic Year - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="color: #1e3c72;">📅 Start New Academic Year</h1>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+    
+    <div class="card" style="background: white; padding: 30px; border-radius: 10px; max-width: 800px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ffc107;">
+            <p style="color: #856404; margin: 0; font-weight: bold;">
+                ⚠️ Important: Starting a new academic year will:
+            </p>
+            <ul style="color: #856404; margin: 10px 0 0 20px;">
+                <li>Archive the current academic year</li>
+                <li>Reset all fee balances to zero</li>
+                <li>Create a fresh start for the new year</li>
+                <li>Student records will be preserved</li>
+                <li>Historical data will remain viewable</li>
+                <li>Students keep their current class</li>
+            </ul>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>New Academic Year *</label>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" 
+                           name="academic_year" 
+                           id="academic_year_input" 
+                           class="form-control" 
+                           placeholder="e.g., 2025-2026" 
+                           style="flex: 1; min-width: 200px;"
+                           list="year_suggestions"
+                           required>
+                    <datalist id="year_suggestions">
+                        {% for year in available_years %}
+                        <option value="{{ year }}">
+                        {% endfor %}
+                        <!-- Add some past years -->
+                        <option value="2020-2021">
+                        <option value="2021-2022">
+                        <option value="2022-2023">
+                        <option value="2023-2024">
+                        <option value="2024-2025">
+                    </datalist>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setCurrentYear()" style="white-space: nowrap;">
+                        📅 Use Current Year
+                    </button>
+                </div>
+                <small class="form-text">
+                    Type any year format like <strong>2025-2026</strong> or <strong>2025/2026</strong>. 
+                    You can also type past years for historical records.
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label>Current Semester</label>
+                <select name="current_semester" class="form-control">
+                    <option value="FIRST">1st Semester</option>
+                    <option value="SECOND">2nd Semester</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ today|date:'Y-m-d' }}">
+                <small class="form-text">When does this academic year start?</small>
+            </div>
+            
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                <small class="form-text">When does this academic year end?</small>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button type="submit" class="btn btn-primary" style="background: #1e3c72; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                    ✅ Start New Academic Year
+                </button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="background: #6c757d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+                    ❌ Cancel
+                </a>
+            </div>
+        </form>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            <h4 style="color: #1e3c72;">📋 What Will Happen</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div>
+                    <strong>Current Year:</strong>
+                    {% if current_year %}
+                        <span style="color: #1e3c72;">{{ current_year.academic_year }}</span>
+                        <span style="color: #2e7d32; font-size: 12px;">(Active)</span>
+                    {% else %}
+                        <span style="color: #999;">No active year</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <strong>New Year:</strong>
+                    <span style="color: #1e3c72; font-weight: bold;">Will be set as active</span>
+                </div>
+                <div>
+                    <strong>Student Fees:</strong>
+                    <span style="color: #c62828;">Reset to zero</span>
+                </div>
+                <div>
+                    <strong>Student Balances:</strong>
+                    <span style="color: #c62828;">Reset to zero</span>
+                </div>
+                <div>
+                    <strong>Payment History:</strong>
+                    <span style="color: #856404;">Archived with old year</span>
+                </div>
+                <div>
+                    <strong>Expenses:</strong>
+                    <span style="color: #c62828;">Reset to zero</span>
+                </div>
+                <div>
+                    <strong>Staff Payroll:</strong>
+                    <span style="color: #c62828;">Reset to zero</span>
+                </div>
+                <div>
+                    <strong>Students:</strong>
+                    <span style="color: #2e7d32;">Preserved, manual promotion</span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 5px;">
+            <h4 style="color: #2e7d32; margin-bottom: 10px;">💡 Tips</h4>
+            <ul style="color: #1e3c72; margin-left: 20px;">
+                <li>You can enter <strong>any year</strong> - past, present, or future</li>
+                <li>Use format like <strong>2025-2026</strong> or <strong>2025/2026</strong></li>
+                <li>Entering past years allows you to <strong>import historical data</strong></li>
+                <li>You can always <strong>edit classes</strong> and <strong>promote students</strong> later</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+function setCurrentYear() {
+    var currentYear = new Date().getFullYear();
+    var nextYear = currentYear + 1;
+    document.getElementById('academic_year_input').value = currentYear + '-' + nextYear;
+}
+</script>
+
+<style>
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+.form-control { 
+    width: 100%; 
+    padding: 10px; 
+    border: 1px solid #ddd; 
+    border-radius: 5px; 
+    font-size: 14px; 
+}
+.form-control:focus {
+    border-color: #1e3c72;
+    outline: none;
+    box-shadow: 0 0 5px rgba(30, 60, 114, 0.3);
+}
+.form-text { font-size: 12px; color: #666; margin-top: 5px; }
+.btn { 
+    display: inline-block; 
+    padding: 8px 16px; 
+    border-radius: 5px; 
+    text-decoration: none; 
+    border: none;
+    cursor: pointer;
+}
+.btn-primary { background: #1e3c72; color: white; }
+.btn-primary:hover { background: #2a5298; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #5a6268; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-outline-secondary { 
+    background: transparent; 
+    color: #6c757d; 
+    border: 1px solid #6c757d; 
+}
+.btn-outline-secondary:hover { 
+    background: #6c757d; 
+    color: white; 
+}
+</style>
+{% endblock %}

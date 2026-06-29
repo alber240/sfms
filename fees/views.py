@@ -6,6 +6,11 @@ from django.utils import timezone
 from datetime import date, timedelta
 from django.db.models import Q, Sum
 
+from django.db import transaction
+from datetime import datetime, timedelta
+from decimal import Decimal
+from students.models import Class
+
 from students.models import Student, Class
 from .models import (
     AcademicSession,
@@ -647,3 +652,233 @@ def toggle_category_status(request, pk):
     
     category.save()
     return redirect('manage_categories')
+
+
+@login_required
+def start_new_academic_year(request):
+    """Start a new academic year - reset everything except students and staff"""
+    from .models import AcademicSession, FeeStructure, StudentFeeLedger, ScholarshipType, StudentScholarship
+    from expenses.models import Expense, ExpenseCategory
+    from receipts.models import Receipt, PaymentAllocation
+    from payroll.models import Staff, PayrollEntry, PayrollReceipt
+    from students.models import Student
+    from django.contrib import messages
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+    import os
+    
+    if request.method == 'POST':
+        new_year = request.POST.get('academic_year')
+        new_semester = request.POST.get('current_semester', 'FIRST')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        
+        if not new_year:
+            messages.error(request, 'Please enter academic year.')
+            return redirect('start_academic_year')
+        
+        # Check if year already exists
+        if AcademicSession.objects.filter(academic_year=new_year).exists():
+            messages.error(request, f'Academic year {new_year} already exists.')
+            return redirect('start_academic_year')
+        
+        try:
+            with transaction.atomic():
+                # 1. Archive current active year
+                current_active = AcademicSession.objects.filter(is_active=True).first()
+                if current_active:
+                    current_active.is_active = False
+                    current_active.is_archived = True
+                    current_active.save()
+                
+                # 2. Create new academic year
+                new_session = AcademicSession.objects.create(
+                    name=f"{new_year} Academic Year",
+                    academic_year=new_year,
+                    is_active=True,
+                    is_archived=False,
+                    current_semester=new_semester,
+                    start_date=start_date or datetime.now().date(),
+                    end_date=end_date or datetime.now().date() + timedelta(days=365)
+                )
+                
+                # ============================================================
+                # THINGS THAT STAY (DO NOT DELETE)
+                # ============================================================
+                # Students - stay
+                # Staff - stay
+                # Inventory - stay
+                
+                # ============================================================
+                # THINGS THAT RESET (DELETE OR RESET)
+                # ============================================================
+                
+                # 3. RESET: Student Fee Ledgers (delete for new year)
+                StudentFeeLedger.objects.filter(academic_year=new_year).delete()
+                
+                # 4. RESET: Fee Structures (delete for new year)
+                FeeStructure.objects.filter(academic_year=new_year).delete()
+                
+                # 5. RESET: Student Scholarships (delete for new year)
+                StudentScholarship.objects.filter(academic_year=new_year).delete()
+                
+                # 6. RESET: Payroll Entries (delete all - they will be recreated)
+                # Delete all payroll entries (they don't have academic_year)
+                PayrollEntry.objects.all().delete()
+                
+                # 7. RESET: Payroll Receipts (delete all)
+                PayrollReceipt.objects.all().delete()
+                
+                # 8. RESET: Expenses (delete all - start fresh)
+                Expense.objects.all().delete()
+                
+                # 9. RESET: Receipts (delete all - start fresh)
+                Receipt.objects.all().delete()
+                
+                # 10. RESET: Payment Allocations (delete all)
+                PaymentAllocation.objects.all().delete()
+                
+                # 11. Create empty fee ledgers for all students (with zero balances)
+                for student in Student.objects.filter(is_active=True):
+                    StudentFeeLedger.objects.create(
+                        student=student,
+                        academic_year=new_year,
+                        semester1_total_lrd=Decimal('0'),
+                        semester1_total_usd=Decimal('0'),
+                        semester2_total_lrd=Decimal('0'),
+                        semester2_total_usd=Decimal('0'),
+                        semester1_paid_lrd=Decimal('0'),
+                        semester1_paid_usd=Decimal('0'),
+                        semester2_paid_lrd=Decimal('0'),
+                        semester2_paid_usd=Decimal('0'),
+                        discount_applied_lrd=Decimal('0'),
+                        discount_applied_usd=Decimal('0')
+                    )
+                
+                messages.success(
+                    request, 
+                    f'✅ Academic year {new_year} started successfully!\n'
+                    f'• Students and Staff preserved\n'
+                    f'• All balances reset to zero\n'
+                    f'• Fees, expenses, payroll, and scholarships reset\n'
+                    f'• Please set up new fee structure and categories'
+                )
+                return redirect('dashboard')
+                
+        except Exception as e:
+            messages.error(request, f'Error starting academic year: {str(e)}')
+            return redirect('start_academic_year')
+    
+    # GET request - show the form
+    current_year = AcademicSession.objects.filter(is_active=True).first()
+    
+    # Generate suggestions for dropdown (past, present, and future)
+    current_year_num = datetime.now().year
+    available_years = []
+    
+    # Past 5 years
+    for i in range(5, 0, -1):
+        year = f"{current_year_num - i}-{current_year_num - i + 1}"
+        available_years.append(year)
+    
+    # Current and future 10 years
+    for i in range(10):
+        year = f"{current_year_num + i}-{current_year_num + i + 1}"
+        available_years.append(year)
+    
+    context = {
+        'current_year': current_year,
+        'available_years': available_years,
+        'today': datetime.now().date(),
+        'end_date': datetime.now().date() + timedelta(days=365),
+    }
+    return render(request, 'fees/start_academic_year.html', context)
+
+
+@login_required
+def view_academic_year(request, year=None):
+    """View data for a specific academic year"""
+    from .models import AcademicSession, FeeStructure, StudentFeeLedger
+    from receipts.models import Receipt
+    from expenses.models import Expense
+    from payroll.models import PayrollEntry
+    from students.models import Student
+    from django.db.models import Sum
+    
+    # Get all academic years for dropdown
+    all_years = AcademicSession.objects.all().order_by('-academic_year')
+    
+    # If no year specified, use current active year
+    if not year:
+        current = AcademicSession.objects.filter(is_active=True).first()
+        if current:
+            year = current.academic_year
+        else:
+            year = all_years.first().academic_year if all_years else None
+    
+    # Get the selected academic session
+    academic_session = AcademicSession.objects.filter(academic_year=year).first()
+    
+    if not academic_session:
+        messages.error(request, f'Academic year {year} not found.')
+        return redirect('dashboard')
+    
+    # Get data for this year
+    is_current = academic_session.is_active
+    is_archived = academic_session.is_archived
+    
+    # Get students for this year (all students, with their ledgers for this year)
+    students = Student.objects.filter(is_active=True)
+    
+    # Get receipts for this year
+    receipts = Receipt.objects.filter(
+        payment_date__year=academic_session.start_date.year
+    ) if academic_session.start_date else Receipt.objects.none()
+    
+    # Get expenses for this year
+    expenses = Expense.objects.filter(
+        expense_date__year=academic_session.start_date.year
+    ) if academic_session.start_date else Expense.objects.none()
+    
+    # Get fee structures for this year
+    fee_structures = FeeStructure.objects.filter(academic_year=year)
+    
+    # Get student fee ledgers for this year
+    ledgers = StudentFeeLedger.objects.filter(academic_year=year)
+    
+    # Calculate summary
+    total_collected_lrd = receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    total_collected_usd = receipts.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+    total_expenses_lrd = expenses.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
+    total_expenses_usd = expenses.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+    
+    # ============================================================
+    # ADD THESE LINES (net cash calculation)
+    # ============================================================
+    net_cash = total_collected_lrd - total_expenses_lrd
+    net_cash_usd = total_collected_usd - total_expenses_usd
+    
+    context = {
+        'academic_session': academic_session,
+        'all_years': all_years,
+        'selected_year': year,
+        'is_current': is_current,
+        'is_archived': is_archived,
+        'receipts': receipts[:20],
+        'expenses': expenses[:20],
+        'fee_structures': fee_structures,
+        'ledgers': ledgers,
+        'total_collected_lrd': total_collected_lrd,
+        'total_collected_usd': total_collected_usd,
+        'total_expenses_lrd': total_expenses_lrd,
+        'total_expenses_usd': total_expenses_usd,
+        'student_count': students.count(),
+        'receipt_count': receipts.count(),
+        'expense_count': expenses.count(),
+        # ============================================================
+        # ADD THESE LINES TO THE CONTEXT DICTIONARY
+        # ============================================================
+        'net_cash': net_cash,
+        'net_cash_usd': net_cash_usd,
+    }
+    return render(request, 'fees/view_academic_year.html', context)

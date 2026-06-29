@@ -32,4 +32,9 @@ path('delete-category/<int:pk>/', views.delete_category, name='delete_fee_catego
 path('inactive-categories/', views.inactive_categories, name='inactive_categories'),
 path('toggle-category/<int:pk>/', views.toggle_category_status, name='toggle_category_status'),
 path('fee-matrix/', views.fee_structure_matrix, name='fee_matrix'),
+
+path('start-academic-year/', views.start_new_academic_year, name='start_academic_year'),
+
+path('view-year/<str:year>/', views.view_academic_year, name='view_academic_year'),
+path('view-year/', views.view_academic_year, name='view_academic_year_default'),
 ]

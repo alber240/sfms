@@ -1,52 +1,155 @@
 ﻿{% extends 'base.html' %}
 
-{% block title %}Fee Settings - SFMS{% endblock %}
+{% block title %}System Settings - SFMS{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="card" style="max-width: 600px; margin: 50px auto; padding: 40px; text-align: center; background: white; border-radius: 10px;">
-        <h1>💰 Fee Structure Management</h1>
-        <p style="margin: 20px 0; color: #666;">The fee structure has been upgraded to a new matrix system.</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1>⚙️ System Settings</h1>
+        <p style="color: #666;">Configure your school financial management system</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
         
-        <div style="margin: 30px 0;">
-            <a href="/fees/fee-matrix/" class="btn btn-primary" style="padding: 15px 30px; font-size: 18px;">
-                📊 Go to Fee Matrix
-            </a>
+        <!-- 📂 Expense Categories -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">📂</div>
+            <h3 style="text-align: center; color: #1e3c72;">Expense Categories</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Manage categories for recording expenses</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'expense_category_list' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">+ Add Category</a>
+            </div>
         </div>
         
-        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; text-align: left;">
-            <strong>📌 What's New:</strong>
-            <ul style="margin-top: 10px;">
-                <li>Set fees for Yearly, 1st Semester, and 2nd Semester separately</li>
-                <li>Different amounts for New Students vs Returning Students</li>
-                <li>Auto-calculation of Yearly total from Semester 1 + Semester 2</li>
-                <li>Support for both LRD and USD per fee category</li>
-            </ul>
+        <!-- 📅 Academic Year (NEW) -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border: 2px solid #ffc107;">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">📅</div>
+            <h3 style="text-align: center; color: #856404;">Academic Year</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Start a new academic year. Resets all balances.</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'start_academic_year' %}" class="btn btn-warning" style="padding: 8px 16px; font-size: 13px; background: #ffc107; color: #856404; text-decoration: none; border-radius: 5px;">
+                    📅 Start New Year
+                </a>
+            </div>
         </div>
         
-        <div style="margin-top: 20px;">
-            <a href="/settings/" class="btn">← Back to Settings</a>
+        <!-- 💱 Exchange Rate -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">💱</div>
+            <h3 style="text-align: center; color: #1e3c72;">Exchange Rate</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Set daily LRD to USD exchange rate</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'exchange_rate_settings' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Set Rate →</a>
+            </div>
         </div>
+        
+        <!-- 📚 Classes & Grades -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">📚</div>
+            <h3 style="text-align: center; color: #1e3c72;">Classes & Grades</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Manage school classes and grades</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'class_list' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Manage Classes →</a>
+            </div>
+        </div>
+        
+        <!-- 💰 Fee Structure -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">💰</div>
+            <h3 style="text-align: center; color: #1e3c72;">Fee Structure</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Set fees per class (tuition, registration, lab, PTA, etc.)</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'fee_matrix' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Configure Fees →</a>
+            </div>
+            <div style="text-align: center; margin-top: 10px; font-size: 12px;">
+                <a href="{% url 'fee_structure_list' %}" style="color: #1e3c72; text-decoration: none;">📋 Manage Fee Structures</a> | 
+                <a href="{% url 'installment_plans' %}" style="color: #1e3c72; text-decoration: none;">📅 Set Installment Plans</a><br>
+                <a href="{% url 'auto_assign_fees' %}" style="color: #1e3c72; text-decoration: none;">⚡ Auto-Assign Fees to Students</a> |
+                <a href="{% url 'overdue_payments' %}" style="color: #c62828; text-decoration: none;">⚠️ View Overdue Payments</a>
+            </div>
+        </div>
+        
+        <!-- 🎓 Scholarships -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">🎓</div>
+            <h3 style="text-align: center; color: #1e3c72;">Scholarships</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Manage scholarship types and assignments</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'scholarship_management' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Manage Scholarships →</a>
+            </div>
+        </div>
+        
+        <!-- 👥 Staff & Payroll -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">👥</div>
+            <h3 style="text-align: center; color: #1e3c72;">Staff & Payroll</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Manage teachers, set salaries, track advances</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'staff_list' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Manage Staff →</a>
+            </div>
+        </div>
+        
+        <!-- 🏫 School Information -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">🏫</div>
+            <h3 style="text-align: center; color: #1e3c72;">School Information</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">School name, address, contact details</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'school_info' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Configure →</a>
+            </div>
+        </div>
+        
+        <!-- ☁️ Cloud Sync -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">☁️</div>
+            <h3 style="text-align: center; color: #1e3c72;">Cloud Sync</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Sync data to cloud for backup and remote access</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'cloud_sync_settings' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Configure Sync →</a>
+            </div>
+        </div>
+        
+        <!-- 💾 Backup -->
+        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+            <div style="font-size: 36px; text-align: center; margin-bottom: 10px;">💾</div>
+            <h3 style="text-align: center; color: #1e3c72;">Backup</h3>
+            <p style="color: #666; text-align: center; font-size: 13px;">Backup database and files to USB drive</p>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{% url 'backup_view' %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">Backup Now →</a>
+            </div>
+        </div>
+        
+    </div>
+    
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{% url 'dashboard' %}" class="btn" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+            ← Back to Dashboard
+        </a>
     </div>
 </div>
 
 <style>
-.card {
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
 .btn-primary {
     background: #1e3c72;
     color: white;
     text-decoration: none;
     border-radius: 5px;
 }
-.btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background: #6c757d;
-    color: white;
+.btn-primary:hover {
+    background: #2a5298;
+}
+.btn-warning {
+    background: #ffc107;
+    color: #856404;
     text-decoration: none;
     border-radius: 5px;
+}
+.btn-warning:hover {
+    background: #e0a800;
+}
+.card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    transition: box-shadow 0.3s ease;
 }
 </style>
 {% endblock %}

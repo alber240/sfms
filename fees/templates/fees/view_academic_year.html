@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}View Academic Year - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="color: #1e3c72;">📅 Academic Year: {{ selected_year }}</h1>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+    
+    <!-- Year Selector -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <form method="get" action="{% url 'view_academic_year_default' %}">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <label style="font-weight: bold;">Select Academic Year:</label>
+                <select name="year" class="form-control" style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" onchange="this.form.submit()">
+                    {% for year_obj in all_years %}
+                    <option value="{{ year_obj.academic_year }}" {% if year_obj.academic_year == selected_year %}selected{% endif %}>
+                        {{ year_obj.academic_year }} 
+                        {% if year_obj.is_active %} (Active){% endif %}
+                        {% if year_obj.is_archived %} (Archived){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span style="font-size: 14px; color: #666;">
+                    {% if is_current %}
+                        <span style="color: #2e7d32; font-weight: bold;">✅ Active Year</span>
+                    {% elif is_archived %}
+                        <span style="color: #856404; font-weight: bold;">📦 Archived</span>
+                    {% endif %}
+                </span>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #666; font-size: 14px;">Total Collected</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #2e7d32;">{{ total_collected_lrd|floatformat:0 }} LRD</div>
+            <div style="font-size: 14px; color: #666;">{{ total_collected_usd|floatformat:2 }} USD</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #666; font-size: 14px;">Total Expenses</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #c62828;">{{ total_expenses_lrd|floatformat:0 }} LRD</div>
+            <div style="font-size: 14px; color: #666;">{{ total_expenses_usd|floatformat:2 }} USD</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #666; font-size: 14px;">Net Cash</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #1e3c72;">{{ net_cash|floatformat:0 }} LRD</div>
+            <div style="font-size: 14px; color: #666;">{{ net_cash_usd|floatformat:2 }} USD</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #666; font-size: 14px;">Transactions</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #1e3c72;">{{ receipt_count }}</div>
+            <div style="font-size: 14px; color: #666;">Receipts</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #666; font-size: 14px;">Students</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #1e3c72;">{{ student_count }}</div>
+            <div style="font-size: 14px; color: #666;">Active Students</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="color: #666; font-size: 14px;">Expenses</h3>
+            <div style="font-size: 28px; font-weight: bold; color: #c62828;">{{ expense_count }}</div>
+            <div style="font-size: 14px; color: #666;">Total Expenses</div>
+        </div>
+    </div>
+    
+    <!-- Recent Receipts -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3>📜 Recent Payments</h3>
+        {% if receipts %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Receipt #</th>
+                    <th>Student</th>
+                    <th>Amount (LRD)</th>
+                    <th>Amount (USD)</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for receipt in receipts %}
+                <tr>
+                    <td>#{{ receipt.receipt_number }}</td>
+                    <td>{{ receipt.student.full_name }}</td>
+                    <td>{{ receipt.amount_lrd|floatformat:2 }}</td>
+                    <td>{{ receipt.amount_usd|floatformat:2 }}</td>
+                    <td>{{ receipt.payment_date|date:"Y-m-d" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; color: #999;">No receipts for this academic year.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Recent Expenses -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3>💳 Recent Expenses</h3>
+        {% if expenses %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount (LRD)</th>
+                    <th>Amount (USD)</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.description }}</td>
+                    <td>{{ expense.category.name|default:"-" }}</td>
+                    <td>{{ expense.amount_lrd|floatformat:2 }}</td>
+                    <td>{{ expense.amount_usd|floatformat:2 }}</td>
+                    <td>{{ expense.expense_date|date:"Y-m-d" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; color: #999;">No expenses for this academic year.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Academic Year Details -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3>📋 Academic Year Details</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <p><strong>Academic Year:</strong> {{ academic_session.academic_year }}</p>
+            <p><strong>Status:</strong> 
+                {% if academic_session.is_active %}
+                    <span style="color: #2e7d32;">✅ Active</span>
+                {% elif academic_session.is_archived %}
+                    <span style="color: #856404;">📦 Archived</span>
+                {% else %}
+                    <span style="color: #666;">Inactive</span>
+                {% endif %}
+            </p>
+            <p><strong>Semester:</strong> {{ academic_session.get_current_semester_display }}</p>
+            <p><strong>Start Date:</strong> {{ academic_session.start_date|date:"Y-m-d" }}</p>
+            <p><strong>End Date:</strong> {{ academic_session.end_date|date:"Y-m-d" }}</p>
+            <p><strong>Created:</strong> {{ academic_session.created_at|date:"Y-m-d H:i" }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card:hover {
+    transform: translateY(-5px);
+    transition: transform 0.3s ease;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table th, .table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+.form-control {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+.card {
+    overflow: hidden;
+}
+.btn-secondary {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+.btn-secondary:hover {
+    background: #5a6268;
+}
+</style>
+{% endblock %}
