@@ -988,12 +988,16 @@ def year_transition_step3(request):
         
         try:
             with transaction.atomic():
+                # ============================================================
                 # 1. Archive current year
+                # ============================================================
                 current_year.is_active = False
                 current_year.is_archived = True
                 current_year.save()
                 
+                # ============================================================
                 # 2. Create new academic year
+                # ============================================================
                 new_session = AcademicSession.objects.create(
                     name=f"{new_year} Academic Year",
                     academic_year=new_year,
@@ -1005,7 +1009,9 @@ def year_transition_step3(request):
                     previous_year=current_year.academic_year
                 )
                 
+                # ============================================================
                 # 3. Copy fee structures
+                # ============================================================
                 old_fee_structures = FeeStructure.objects.filter(academic_year=current_year.academic_year)
                 for fs in old_fee_structures:
                     FeeStructure.objects.create(
@@ -1020,14 +1026,16 @@ def year_transition_step3(request):
                         is_active=True
                     )
                 
+                # ============================================================
                 # 4. Process each student
+                # ============================================================
                 students = Student.objects.filter(is_active=True)
                 class_data = statuses.get('class_data', {})
                 
                 for student in students:
                     status = statuses.get(f'status_{student.id}', 'PROMOTED')
                     
-                    # Check final grade
+                    # Check final grade (Grade 12)
                     current_class = student.class_assigned
                     is_final_grade = False
                     if current_class:
@@ -1037,6 +1045,7 @@ def year_transition_step3(request):
                             if current_grade >= 12:
                                 is_final_grade = True
                     
+                    # Final grade students can only Graduate or Dropout
                     if is_final_grade:
                         if status not in ['GRADUATED', 'DROPOUT']:
                             status = 'GRADUATED'
@@ -1048,6 +1057,7 @@ def year_transition_step3(request):
                         except Class.DoesNotExist:
                             pass
                     
+                    # Create year status record
                     StudentYearStatus.objects.create(
                         student=student,
                         academic_year=new_year,
@@ -1058,6 +1068,7 @@ def year_transition_step3(request):
                         new_type='OLD' if status in ['PROMOTED', 'REPEAT', 'DEMOTED'] else student.student_type,
                     )
                     
+                    # Update student record
                     if status in ['PROMOTED', 'REPEAT', 'DEMOTED']:
                         student.class_assigned = new_class
                         student.student_type = 'OLD'
@@ -1074,7 +1085,9 @@ def year_transition_step3(request):
                         student.archive_date = datetime.now().date() + timedelta(days=365)
                         student.save()
                 
-                # 5. Create new ledgers
+                # ============================================================
+                # 5. Create new ledgers for active students
+                # ============================================================
                 for student in Student.objects.filter(is_active=True):
                     fee_structures = FeeStructure.objects.filter(
                         class_assigned=student.class_assigned,
@@ -1105,12 +1118,31 @@ def year_transition_step3(request):
                         discount_applied_usd=Decimal('0')
                     )
                 
+                # ============================================================
                 # 6. Clear session
+                # ============================================================
                 for key in ['transition_year', 'transition_semester', 'transition_start', 'transition_end', 'transition_statuses']:
                     if key in request.session:
                         del request.session[key]
                 request.session.modified = True
                 
+                # ============================================================
+                # 7. Run auto-archive for old years
+                # ============================================================
+                try:
+                    from core.archive_utils import run_auto_archive
+                    archive_results = run_auto_archive()
+                    archived_count = sum(1 for r in archive_results if r['success'])
+                    if archived_count > 0:
+                        messages.info(request, f'📦 {archived_count} old year(s) automatically archived.')
+                except Exception as e:
+                    # Don't block transition if archive fails
+                    print(f"Archive error: {str(e)}")
+                    pass
+                
+                # ============================================================
+                # 8. Success message
+                # ============================================================
                 messages.success(request, f'✅ Successfully transitioned to {new_year}!')
                 return redirect('dashboard')
                 

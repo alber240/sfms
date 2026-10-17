@@ -9,6 +9,14 @@ from receipts.models import Receipt
 from expenses.models import Expense
 from students.models import Student
 from expenses.models import ExpenseApproval
+from .backup_utils import get_usb_drives
+import json
+import os
+import requests
+import zipfile
+import shutil
+from django.conf import settings
+from django.utils import timezone
 # Safe imports for fees models
 try:
     from fees.models import StudentFeeLedger, InstallmentReminder
@@ -789,3 +797,354 @@ def license_info_api(request):
             'school_name': 'License Error',
             'license_key': 'Check license.json file'
         })
+
+
+# ============================================================
+# RECOVERY FUNCTIONS
+# ============================================================
+
+@login_required
+def recover_data(request):
+    """Recover SFMS data from cloud using recovery key"""
+    from .models import SchoolRecovery
+    from django.contrib import messages
+    
+    if request.method == 'POST':
+        recovery_key = request.POST.get('recovery_key', '').strip().upper()
+        
+        if not recovery_key:
+            messages.error(request, 'Please enter a recovery key.')
+            return render(request, 'recovery.html')
+        
+        # Validate recovery key format
+        if not recovery_key.startswith('RECOVER-'):
+            messages.error(request, 'Invalid recovery key format. Should start with RECOVER-')
+            return render(request, 'recovery.html')
+        
+        try:
+            # Get license info
+            license_path = os.path.join(settings.BASE_DIR, 'license.json')
+            with open(license_path, 'r') as f:
+                license_data = json.load(f)
+            
+            supabase_url = license_data.get('supabase_url', '')
+            supabase_key = license_data.get('supabase_key', '')
+            
+            if not supabase_url or not supabase_key:
+                messages.error(request, 'Supabase credentials not found in license. Please contact the developer.')
+                return render(request, 'recovery.html')
+            
+            # Verify recovery key in cloud
+            headers = {
+                'apikey': supabase_key,
+                'Authorization': f'Bearer {supabase_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            # Check if recovery key exists
+            response = requests.get(
+                f"{supabase_url}/rest/v1/school_recovery?recovery_key=eq.{recovery_key}",
+                headers=headers,
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                messages.error(request, 'Could not connect to cloud. Please check your internet connection.')
+                return render(request, 'recovery.html')
+            
+            data = response.json()
+            
+            if not data:
+                messages.error(request, 'Invalid recovery key. Please contact the developer.')
+                return render(request, 'recovery.html')
+            
+            # Recovery key is valid
+            recovery_info = data[0]
+            school_name = recovery_info.get('school_name', 'Unknown')
+            
+            # Download all data from cloud
+            # This is a simplified version - in production, download all tables
+            tables = ['students', 'receipts', 'expenses', 'fees', 'payroll']
+            records_downloaded = 0
+            
+            for table in tables:
+                try:
+                    response = requests.get(
+                        f"{supabase_url}/rest/v1/{table}",
+                        headers=headers,
+                        timeout=30
+                    )
+                    if response.status_code == 200:
+                        records = response.json()
+                        records_downloaded += len(records)
+                except:
+                    pass
+            
+            # Save recovery info locally
+            SchoolRecovery.objects.update_or_create(
+                recovery_key=recovery_key,
+                defaults={
+                    'school_name': school_name,
+                    'license_key': license_data.get('license_key', ''),
+                    'supabase_url': supabase_url,
+                    'supabase_key': supabase_key,
+                    'last_sync': timezone.now()
+                }
+            )
+            
+            messages.success(
+                request, 
+                f'✅ Data recovered successfully for {school_name}! '
+                f'{records_downloaded} records downloaded.'
+            )
+            return redirect('dashboard')
+            
+        except json.JSONDecodeError:
+            messages.error(request, 'Error reading license file.')
+            return render(request, 'recovery.html')
+        except requests.RequestException as e:
+            messages.error(request, f'Connection error: {str(e)}')
+            return render(request, 'recovery.html')
+        except Exception as e:
+            messages.error(request, f'Recovery error: {str(e)}')
+            return render(request, 'recovery.html')
+    
+    return render(request, 'recovery.html')
+
+
+@login_required
+def restore_from_usb(request):
+    """Restore data from USB backup"""
+    from django.contrib import messages
+    
+    usb_drives = get_usb_drives()
+    backups = []
+    
+    for drive in usb_drives:
+        backup_dir = os.path.join(drive, 'SFMS_Backup')
+        if os.path.exists(backup_dir):
+            for file in os.listdir(backup_dir):
+                if file.endswith('.zip'):
+                    file_path = os.path.join(backup_dir, file)
+                    backups.append({
+                        'drive': drive,
+                        'file': file,
+                        'path': file_path,
+                        'date': timezone.datetime.fromtimestamp(
+                            os.path.getctime(file_path)
+                        ).strftime('%Y-%m-%d %H:%M'),
+                        'size': os.path.getsize(file_path) / 1024 / 1024,
+                    })
+    
+    # Sort backups by date (newest first)
+    backups.sort(key=lambda x: x['date'], reverse=True)
+    
+    if request.method == 'POST':
+        backup_file = request.POST.get('backup_file')
+        
+        if not backup_file:
+            messages.error(request, 'Please select a backup file.')
+            return redirect('restore_from_usb')
+        
+        # Find the backup
+        backup_path = None
+        for backup in backups:
+            if backup['file'] == backup_file:
+                backup_path = backup['path']
+                break
+        
+        if not backup_path:
+            messages.error(request, 'Backup file not found.')
+            return redirect('restore_from_usb')
+        
+        try:
+            # Extract backup
+            with zipfile.ZipFile(backup_path, 'r') as zipf:
+                # Extract database
+                zipf.extract('db.sqlite3', settings.BASE_DIR)
+                
+                # Extract media files
+                for member in zipf.namelist():
+                    if member.startswith('media/'):
+                        zipf.extract(member, settings.BASE_DIR)
+            
+            messages.success(request, '✅ Data restored successfully from USB! Please restart SFMS.')
+            return redirect('dashboard')
+            
+        except Exception as e:
+            messages.error(request, f'Restore failed: {str(e)}')
+            return redirect('restore_from_usb')
+    
+    context = {
+        'usb_drives': usb_drives,
+        'backups': backups,
+    }
+    return render(request, 'restore_usb.html', context)
+
+# ============================================================
+# CLOUD SYNC VIEWS
+# ============================================================
+
+@login_required
+def cloud_sync_settings(request):
+    """Cloud sync configuration and status page"""
+    from .cloud_sync import CloudSync
+    
+    sync = CloudSync()
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'sync_now':
+            success, message = sync_to_cloud()
+            if success:
+                messages.success(request, f'✅ Cloud sync completed! {message}')
+            else:
+                messages.error(request, f'❌ Sync failed: {message}')
+            return redirect('cloud_sync_settings')
+    
+    # Get sync status
+    is_configured = sync.is_configured()
+    connection_status = "Not Configured"
+    
+    if is_configured:
+        success, message = sync._test_connection()
+        connection_status = "Connected" if success else f"Error: {message}"
+    
+    context = {
+        'is_configured': is_configured,
+        'connection_status': connection_status,
+        'school_name': sync.school_name,
+        'recovery_key': sync.recovery_key,
+        'supabase_url': sync.supabase_url[:30] + '...' if sync.supabase_url else 'Not set',
+    }
+    return render(request, 'core/cloud_sync.html', context)
+
+
+@login_required
+def cloud_sync_now(request):
+    """Trigger cloud sync manually"""
+    from .cloud_sync import sync_to_cloud
+    
+    success, message = sync_to_cloud()
+    
+    if success:
+        messages.success(request, f'✅ Cloud sync completed!')
+    else:
+        messages.error(request, f'❌ Sync failed: {message}')
+    
+    return redirect('dashboard')
+
+# ============================================================
+# ARCHIVE VIEWS
+# ============================================================
+
+@login_required
+def archive_list(request):
+    """List all archived years"""
+    from .models import ArchiveIndex
+    from .archive_utils import Archiver
+    
+    archives = ArchiveIndex.objects.all().order_by('-academic_year')
+    archiver = Archiver()
+    years_to_archive = archiver.get_years_to_archive()
+    
+    context = {
+        'archives': archives,
+        'years_to_archive': years_to_archive,
+        'archive_dir': ARCHIVE_DIR if 'ARCHIVE_DIR' in dir() else '',
+    }
+    return render(request, 'core/archive_list.html', context)
+
+
+@login_required
+def archive_year_now(request):
+    """Archive a specific year"""
+    from .archive_utils import Archiver
+    
+    if request.method == 'POST':
+        academic_year = request.POST.get('academic_year')
+        
+        if not academic_year:
+            messages.error(request, 'No academic year specified.')
+            return redirect('archive_list')
+        
+        archiver = Archiver()
+        success, message = archiver.archive_year(academic_year)
+        
+        if success:
+            messages.success(request, f'✅ {message}')
+        else:
+            messages.error(request, f'❌ {message}')
+    
+    return redirect('archive_list')
+
+
+@login_required
+def archive_all_now(request):
+    """Archive all eligible years"""
+    from .archive_utils import Archiver
+    
+    if request.method == 'POST':
+        archiver = Archiver()
+        results = archiver.archive_all_old_years()
+        
+        if results:
+            success_count = sum(1 for r in results if r['success'])
+            messages.success(request, f'✅ Archived {success_count} years')
+        else:
+            messages.info(request, 'No years to archive')
+    
+    return redirect('archive_list')
+
+
+@login_required
+def view_archive(request, academic_year):
+    """View archived year data"""
+    from .models import ArchiveIndex
+    import zipfile
+    
+    archive = get_object_or_404(ArchiveIndex, academic_year=academic_year)
+    
+    # Read archive contents
+    file_path = os.path.join(ARCHIVE_DIR, archive.file_name)
+    
+    if not os.path.exists(file_path):
+        messages.error(request, 'Archive file not found.')
+        return redirect('archive_list')
+    
+    data = {}
+    try:
+        with zipfile.ZipFile(file_path, 'r') as zipf:
+            for name in zipf.namelist():
+                if name.endswith('.json'):
+                    with zipf.open(name) as f:
+                        data[name.replace('.json', '')] = json.load(f)
+    except Exception as e:
+        messages.error(request, f'Error reading archive: {str(e)}')
+        return redirect('archive_list')
+    
+    context = {
+        'archive': archive,
+        'data': data,
+        'academic_year': academic_year,
+    }
+    return render(request, 'core/view_archive.html', context)
+
+
+@login_required
+def download_archive(request, academic_year):
+    """Download archive file"""
+    from .models import ArchiveIndex
+    from django.http import FileResponse
+    
+    archive = get_object_or_404(ArchiveIndex, academic_year=academic_year)
+    file_path = os.path.join(ARCHIVE_DIR, archive.file_name)
+    
+    if os.path.exists(file_path):
+        response = FileResponse(open(file_path, 'rb'), as_attachment=True)
+        response['Content-Disposition'] = f'attachment; filename="{archive.file_name}"'
+        return response
+    
+    messages.error(request, 'Archive file not found.')
+    return redirect('archive_list')

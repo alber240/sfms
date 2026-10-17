@@ -33,6 +33,19 @@ urlpatterns = [
     path('process-emails/', views.check_and_send_emails, name='process_emails'),
     path('mobile/', views.mobile_principal_dashboard, name='mobile_principal_dashboard'),
     path('api/license-info/', views.license_info_api, name='license_info_api'),
+
+# Recovery URLs
+path('recover/', views.recover_data, name='recover_data'),
+path('restore-usb/', views.restore_from_usb, name='restore_from_usb'),
+path('cloud-sync/', views.cloud_sync_settings, name='cloud_sync_settings'),
+path('cloud-sync/now/', views.cloud_sync_now, name='cloud_sync_now'),
+
+# Archive URLs
+path('archives/', views.archive_list, name='archive_list'),
+path('archives/archive-now/', views.archive_year_now, name='archive_year_now'),
+path('archives/archive-all/', views.archive_all_now, name='archive_all_now'),
+path('archives/view/<str:academic_year>/', views.view_archive, name='view_archive'),
+path('archives/download/<str:academic_year>/', views.download_archive, name='download_archive'),
 ]
 
 if settings.DEBUG:

@@ -73,3 +73,35 @@ def auto_backup_on_exit():
         return True, zip_path, usb_copied
     except Exception as e:
         return False, str(e), False
+
+
+import os
+import string
+
+def get_usb_drives():
+    """Get list of available USB drives on Windows"""
+    usb_drives = []
+    
+    if os.name == 'nt':  # Windows
+        import ctypes
+        bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+        
+        for letter in string.ascii_uppercase:
+            if bitmask & 1:
+                drive_path = f"{letter}:\\"
+                drive_type = ctypes.windll.kernel32.GetDriveTypeW(drive_path)
+                
+                # Drive type 2 = Removable
+                if drive_type == 2:
+                    usb_drives.append(drive_path)
+            bitmask >>= 1
+    else:
+        # Linux/Mac - check common mount points
+        for path in ['/media', '/mnt', '/Volumes']:
+            if os.path.exists(path):
+                for item in os.listdir(path):
+                    full_path = os.path.join(path, item)
+                    if os.path.ismount(full_path):
+                        usb_drives.append(full_path)
+    
+    return usb_drives

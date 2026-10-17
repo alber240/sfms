@@ -115,3 +115,20 @@ class SchoolRecovery(models.Model):
     
     class Meta:
         verbose_name_plural = "School Recovery"
+
+
+class ArchiveIndex(models.Model):
+    """Track archived academic years"""
+    academic_year = models.CharField(max_length=20, unique=True)
+    file_name = models.CharField(max_length=200)
+    file_size = models.BigIntegerField(default=0)  # bytes
+    record_count = models.IntegerField(default=0)
+    is_cloud_synced = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Archive: {self.academic_year}"
+    
+    @property
+    def file_size_mb(self):
+        return round(self.file_size / 1024 / 1024, 2)

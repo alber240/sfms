@@ -1,0 +1,5 @@
+[33mb3761a0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Academic Year System Complete + Recovery Foundation
+[33m68ea61f[m Complete SFMS with Academic Year Management:
+[33m541bf7e[m Fix batch payment fee category display and receipt sequence
+[33m13eec0c[m Complete SFMS updates:
+[33m32d9a75[m Add license system: middleware, license_check, error page, and license_info_api. Update all templates with developer identity (Albert A. Allen). Implement one-time payment license system with Supabase integration.

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}View Archive - {{ academic_year }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="color: #1e3c72;">📦 Archive: {{ academic_year }}</h1>
+        <div>
+            <a href="{% url 'download_archive' academic_year %}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">📥 Download</a>
+            <a href="{% url 'archive_list' %}" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back</a>
+        </div>
+    </div>
+
+    <!-- Archive Info -->
+    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <h3>Archive Information</h3>
+        <p><strong>Academic Year:</strong> {{ academic_year }}</p>
+        <p><strong>File:</strong> {{ archive.file_name }}</p>
+        <p><strong>Size:</strong> {{ archive.file_size_mb }} MB</p>
+        <p><strong>Records:</strong> {{ archive.record_count }}</p>
+        <p><strong>Archived:</strong> {{ archive.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+
+    <!-- Data Sections -->
+    {% if data.receipts %}
+    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <h3>📜 Receipts ({{ data.receipts|length }})</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; text-align: left;">Receipt #</th>
+                    <th style="padding: 10px; text-align: left;">Student</th>
+                    <th style="padding: 10px; text-align: left;">Amount</th>
+                    <th style="padding: 10px; text-align: left;">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for receipt in data.receipts|slice:":20" %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">#{{ receipt.receipt_number }}</td>
+                    <td style="padding: 10px;">{{ receipt.student_name }}</td>
+                    <td style="padding: 10px;">{{ receipt.amount_lrd }} LRD</td>
+                    <td style="padding: 10px;">{{ receipt.payment_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if data.expenses %}
+    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <h3>💳 Expenses ({{ data.expenses|length }})</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; text-align: left;">Category</th>
+                    <th style="padding: 10px; text-align: left;">Description</th>
+                    <th style="padding: 10px; text-align: left;">Amount</th>
+                    <th style="padding: 10px; text-align: left;">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in data.expenses|slice:":20" %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">{{ expense.category }}</td>
+                    <td style="padding: 10px;">{{ expense.description|truncatechars:40 }}</td>
+                    <td style="padding: 10px;">{{ expense.amount_lrd }} LRD</td>
+                    <td style="padding: 10px;">{{ expense.expense_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{% url 'archive_list' %}" style="color: #1e3c72;">← Back to Archives</a>
+    </div>
+</div>
+{% endblock %}

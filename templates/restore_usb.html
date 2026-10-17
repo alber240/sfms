@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Restore from USB - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 700px; margin: 50px auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 20px rgba(0,0,0,0.1);">
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 64px;">💾</div>
+            <h1 style="color: #1e3c72;">Restore from USB Backup</h1>
+            <p style="color: #666;">Select a backup file to restore your data</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
+                    {% if message.tags == 'success' %}background: #d4edda; color: #155724;
+                    {% elif message.tags == 'error' %}background: #f8d7da; color: #721c24;
+                    {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if backups %}
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">
+                    Select Backup File
+                </label>
+                <select name="backup_file" required
+                        style="width: 100%; padding: 12px; border: 2px solid #1e3c72; border-radius: 8px; font-size: 16px;">
+                    <option value="">-- Select Backup --</option>
+                    {% for backup in backups %}
+                    <option value="{{ backup.file }}">{{ backup.file }} ({{ backup.date }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <p style="color: #856404; margin: 0; font-size: 13px;">
+                    <strong>⚠️ Warning:</strong> This will replace your current database with the backup.
+                    Any changes made since the backup was created will be lost.
+                </p>
+            </div>
+
+            <button type="submit" 
+                    style="width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer;">
+                💾 Restore Backup
+            </button>
+        </form>
+        {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <p style="color: #999; font-size: 16px;">No USB backups found.</p>
+            <p style="color: #666; font-size: 14px;">Please insert a USB drive with SFMS backups.</p>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{% url 'dashboard' %}" style="color: #1e3c72;">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

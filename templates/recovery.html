@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Recover Data - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 600px; margin: 50px auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 20px rgba(0,0,0,0.1);">
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 64px;">🔄</div>
+            <h1 style="color: #1e3c72;">Recover Your SFMS Data</h1>
+            <p style="color: #666;">Enter your recovery key to restore your data from the cloud</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
+                    {% if message.tags == 'success' %}background: #d4edda; color: #155724;
+                    {% elif message.tags == 'error' %}background: #f8d7da; color: #721c24;
+                    {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <p style="color: #1565c0; margin: 0; font-size: 13px;">
+                <strong>ℹ️ Note:</strong> You need an internet connection to recover data from the cloud.
+                If you don't have internet, you can restore from a USB backup instead.
+            </p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">
+                    Recovery Key
+                </label>
+                <input type="text" name="recovery_key" 
+                       placeholder="RECOVER-XXXX-XXXX-XXXX" 
+                       required
+                       style="width: 100%; padding: 15px; border: 2px solid #1e3c72; border-radius: 8px; font-size: 18px; text-align: center; letter-spacing: 2px;">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Enter the recovery key provided by the developer
+                </small>
+            </div>
+
+            <button type="submit" 
+                    style="width: 100%; padding: 15px; background: #1e3c72; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer;">
+                🔄 Recover Data
+            </button>
+        </form>
+
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3 style="color: #1e3c72; font-size: 14px;">ℹ️ What happens when you click recover?</h3>
+            <ol style="color: #666; font-size: 13px; margin-left: 20px;">
+                <li>System verifies your recovery key</li>
+                <li>Connects to the cloud database</li>
+                <li>Downloads all your school data</li>
+                <li>Imports data to this computer</li>
+                <li>Shows confirmation when complete</li>
+            </ol>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="{% url 'dashboard' %}" style="color: #1e3c72;">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
