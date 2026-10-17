@@ -1148,3 +1148,61 @@ def download_archive(request, academic_year):
     
     messages.error(request, 'Archive file not found.')
     return redirect('archive_list')
+
+# ============================================================
+# DATA EXPORT VIEWS
+# ============================================================
+
+@login_required
+def export_dashboard(request):
+    """Data export dashboard"""
+    from fees.models import AcademicSession
+    
+    sessions = AcademicSession.objects.all().order_by('-academic_year')
+    active_session = AcademicSession.objects.filter(is_active=True).first()
+    
+    context = {
+        'sessions': sessions,
+        'active_year': active_session.academic_year if active_session else 'N/A',
+    }
+    return render(request, 'core/export_dashboard.html', context)
+
+
+@login_required
+def export_data(request, export_type):
+    """Export data to Excel or JSON"""
+    from django.http import HttpResponse
+    from .export_utils import export_to_excel, export_to_json
+    from datetime import datetime
+    
+    academic_year = request.GET.get('year')
+    format_type = request.GET.get('format', 'excel')
+    
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    try:
+        if format_type == 'json':
+            data = export_to_json()
+            response = HttpResponse(
+                json.dumps(data, indent=2),
+                content_type='application/json'
+            )
+            response['Content-Disposition'] = f'attachment; filename="sfms_export_{timestamp}.json"'
+            return response
+        else:
+            wb = export_to_excel(export_type, academic_year)
+            
+            # Create response
+            response = HttpResponse(
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            
+            filename = f'sfms_{export_type}_{timestamp}.xlsx'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            wb.save(response)
+            return response
+            
+    except Exception as e:
+        messages.error(request, f'Export failed: {str(e)}')
+        return redirect('export_dashboard')

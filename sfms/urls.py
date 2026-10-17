@@ -46,6 +46,10 @@ path('archives/archive-now/', views.archive_year_now, name='archive_year_now'),
 path('archives/archive-all/', views.archive_all_now, name='archive_all_now'),
 path('archives/view/<str:academic_year>/', views.view_archive, name='view_archive'),
 path('archives/download/<str:academic_year>/', views.download_archive, name='download_archive'),
+
+# Data Export URLs
+path('export/', views.export_dashboard, name='export_dashboard'),
+path('export/<str:export_type>/', views.export_data, name='export_data'),
 ]
 
 if settings.DEBUG:

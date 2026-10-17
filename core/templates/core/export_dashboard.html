@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Export - SFMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="color: #1e3c72;">📊 Data Export</h1>
+        <a href="{% url 'dashboard' %}" class="btn" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Dashboard</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
+                {% if message.tags == 'success' %}background: #d4edda; color: #155724;
+                {% elif message.tags == 'error' %}background: #f8d7da; color: #721c24;
+                {% else %}background: #fff3cd; color: #856404;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Info Box -->
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p style="color: #1565c0; margin: 0; font-size: 14px;">
+            <strong>ℹ️ Info:</strong> Export your data to Excel for audits, backups, or analysis. 
+            All exports include the SFMS branding and can be opened in Microsoft Excel.
+        </p>
+    </div>
+
+    <!-- Academic Year Selector -->
+    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <h3 style="color: #1e3c72;">📅 Select Academic Year</h3>
+        <form method="get" id="yearForm">
+            <select name="year" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-width: 200px;">
+                <option value="">All Years</option>
+                {% for session in sessions %}
+                <option value="{{ session.academic_year }}" {% if session.academic_year == active_year %}selected{% endif %}>
+                    {{ session.academic_year }} {% if session.is_active %}(Active){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; display: block; margin-top: 5px;">Select a year to filter exports</small>
+        </form>
+    </div>
+
+    <!-- Export Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        
+        <!-- Complete Backup -->
+        <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 25px; border-radius: 10px; color: white;">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">📦</div>
+            <h3 style="text-align: center;">Complete Backup</h3>
+            <p style="text-align: center; font-size: 13px; opacity: 0.9;">All data in one Excel file (5 sheets)</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'complete' %}" style="display: inline-block; padding: 10px 20px; background: white; color: #1e3c72; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                    📥 Download Excel
+                </a>
+            </div>
+        </div>
+
+        <!-- Students -->
+        <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">👨‍🎓</div>
+            <h3 style="text-align: center; color: #1e3c72;">Students</h3>
+            <p style="text-align: center; font-size: 13px; color: #666;">Complete student list with classes and parent info</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'students' %}" style="display: inline-block; padding: 10px 20px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">
+                    📥 Export
+                </a>
+            </div>
+        </div>
+
+        <!-- Receipts -->
+        <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">📜</div>
+            <h3 style="text-align: center; color: #1e3c72;">Receipts</h3>
+            <p style="text-align: center; font-size: 13px; color: #666;">All payment records with amounts and methods</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'receipts' %}" style="display: inline-block; padding: 10px 20px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">
+                    📥 Export
+                </a>
+            </div>
+        </div>
+
+        <!-- Expenses -->
+        <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">💳</div>
+            <h3 style="text-align: center; color: #1e3c72;">Expenses</h3>
+            <p style="text-align: center; font-size: 13px; color: #666;">All expense records with categories and amounts</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'expenses' %}" style="display: inline-block; padding: 10px 20px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">
+                    📥 Export
+                </a>
+            </div>
+        </div>
+
+        <!-- Fee Structures -->
+        <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">💰</div>
+            <h3 style="text-align: center; color: #1e3c72;">Fee Structures</h3>
+            <p style="text-align: center; font-size: 13px; color: #666;">Complete fee configuration for all classes</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'fees' %}" style="display: inline-block; padding: 10px 20px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">
+                    📥 Export
+                </a>
+            </div>
+        </div>
+
+        <!-- Payroll -->
+        <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">👥</div>
+            <h3 style="text-align: center; color: #1e3c72;">Payroll</h3>
+            <p style="text-align: center; font-size: 13px; color: #666;">Staff salary and payroll records</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'payroll' %}" style="display: inline-block; padding: 10px 20px; background: #1e3c72; color: white; text-decoration: none; border-radius: 5px;">
+                    📥 Export
+                </a>
+            </div>
+        </div>
+
+        <!-- JSON Export -->
+        <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 25px; border-radius: 10px; color: white;">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">🔧</div>
+            <h3 style="text-align: center;">Developer Export</h3>
+            <p style="text-align: center; font-size: 13px; opacity: 0.9;">Raw data in JSON format (for developers)</p>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{% url 'export_data' 'all' %}?format=json" style="display: inline-block; padding: 10px 20px; background: white; color: #11998e; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                    📥 Download JSON
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Pass selected year to export links
+    document.getElementById('yearForm').addEventListener('change', function() {
+        var year = this.querySelector('select').value;
+        var links = document.querySelectorAll('a[href*="/export/"]');
+        links.forEach(function(link) {
+            var url = new URL(link.href, window.location.origin);
+            if (year) {
+                url.searchParams.set('year', year);
+            } else {
+                url.searchParams.delete('year');
+            }
+            link.href = url.toString();
+        });
+    });
+</script>
+{% endblock %}

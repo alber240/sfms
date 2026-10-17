@@ -171,6 +171,13 @@
 .btn-usb .desc {
     color: rgba(255,255,255,0.8);
 }
+.btn-export {
+    background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+    color: white;
+}
+.btn-export .desc {
+    color: rgba(255,255,255,0.8);
+}
     </style>
 </head>
 <body>
@@ -315,6 +322,13 @@
     <div class="icon">📦</div>
     <div class="title">Archives</div>
     <div class="desc">View old academic years</div>
+</a>
+
+<!-- 📊 Export Button -->
+<a href="{% url 'export_dashboard' %}" class="btn btn-export">
+    <div class="icon">📊</div>
+    <div class="title">Data Export</div>
+    <div class="desc">Export to Excel</div>
 </a>
         </div>
         
