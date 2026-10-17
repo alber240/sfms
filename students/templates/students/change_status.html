@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Change Student Status - {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>📋 Change Status: {{ student.full_name }}</h1>
+        <a href="{% url 'student_detail' student.id %}" class="btn btn-secondary">← Back</a>
+    </div>
+
+    <!-- Student Info Card -->
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3>Student Information</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <p><strong>Admission #:</strong> {{ student.admission_number }}</p>
+            <p><strong>Current Class:</strong> {{ student.get_class_name }}</p>
+            <p><strong>Current Type:</strong> 
+                <span style="color: {% if student.student_type == 'NEW' %}green{% else %}blue{% endif %}; font-weight: bold;">
+                    {{ student.get_student_type_display }}
+                </span>
+            </p>
+            <p><strong>Academic Year:</strong> {{ current_year }}</p>
+        </div>
+    </div>
+
+    <!-- Existing Status Warning -->
+    {% if existing_status %}
+    <div class="card" style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffc107;">
+        <p style="color: #856404; margin: 0;">
+            <strong>⚠️ Status Already Set:</strong> 
+            {{ student.full_name }} is already marked as 
+            <strong>{{ existing_status.get_status_display }}</strong> 
+            for {{ current_year }}.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Status Form -->
+    <div class="card" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h3>Set New Status</h3>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Status Buttons -->
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Select Status:</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    
+                    <!-- Promoted -->
+                    <label style="display: block; cursor: pointer;">
+                        <input type="radio" name="status" value="PROMOTED" required style="display: none;" 
+                               {% if existing_status and existing_status.status == 'PROMOTED' %}checked{% endif %}>
+                        <div class="status-btn promoted" style="padding: 15px; border: 2px solid #28a745; border-radius: 8px; text-align: center; transition: all 0.3s;">
+                            <div style="font-size: 32px;">⬆️</div>
+                            <div style="font-weight: bold; color: #28a745;">Promoted</div>
+                            <div style="font-size: 11px; color: #666;">Move to next class</div>
+                        </div>
+                    </label>
+                    
+                    <!-- Repeat -->
+                    <label style="display: block; cursor: pointer;">
+                        <input type="radio" name="status" value="REPEAT" required style="display: none;"
+                               {% if existing_status and existing_status.status == 'REPEAT' %}checked{% endif %}>
+                        <div class="status-btn repeat" style="padding: 15px; border: 2px solid #ffc107; border-radius: 8px; text-align: center; transition: all 0.3s;">
+                            <div style="font-size: 32px;">🔄</div>
+                            <div style="font-weight: bold; color: #856404;">Repeat</div>
+                            <div style="font-size: 11px; color: #666;">Stay in same class</div>
+                        </div>
+                    </label>
+                    
+                    <!-- Demoted -->
+                    <label style="display: block; cursor: pointer;">
+                        <input type="radio" name="status" value="DEMOTED" required style="display: none;"
+                               {% if existing_status and existing_status.status == 'DEMOTED' %}checked{% endif %}>
+                        <div class="status-btn demoted" style="padding: 15px; border: 2px solid #dc3545; border-radius: 8px; text-align: center; transition: all 0.3s;">
+                            <div style="font-size: 32px;">⬇️</div>
+                            <div style="font-weight: bold; color: #dc3545;">Demoted</div>
+                            <div style="font-size: 11px; color: #666;">Move to lower class</div>
+                        </div>
+                    </label>
+                    
+                    <!-- Leave -->
+                    <label style="display: block; cursor: pointer;">
+                        <input type="radio" name="status" value="LEAVE" required style="display: none;"
+                               {% if existing_status and existing_status.status == 'LEAVE' %}checked{% endif %}>
+                        <div class="status-btn leave" style="padding: 15px; border: 2px solid #6c757d; border-radius: 8px; text-align: center; transition: all 0.3s;">
+                            <div style="font-size: 32px;">🚪</div>
+                            <div style="font-weight: bold; color: #6c757d;">Left School</div>
+                            <div style="font-size: 11px; color: #666;">Transferred out</div>
+                        </div>
+                    </label>
+                    
+                    <!-- Drop Out -->
+                    <label style="display: block; cursor: pointer;">
+                        <input type="radio" name="status" value="DROPOUT" required style="display: none;"
+                               {% if existing_status and existing_status.status == 'DROPOUT' %}checked{% endif %}>
+                        <div class="status-btn dropout" style="padding: 15px; border: 2px solid #721c24; border-radius: 8px; text-align: center; transition: all 0.3s;">
+                            <div style="font-size: 32px;">❌</div>
+                            <div style="font-weight: bold; color: #721c24;">Dropped Out</div>
+                            <div style="font-size: 11px; color: #666;">Quit school</div>
+                        </div>
+                    </label>
+                    
+                </div>
+            </div>
+
+            <!-- New Class -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">New Class:</label>
+                <select name="new_class" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="">-- Select Class --</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" 
+                        {% if student.class_assigned.id == class.id %}selected{% endif %}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small style="color: #666;">Only required for Promoted, Repeat, or Demoted status</small>
+            </div>
+
+            <!-- Notes -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Notes (Optional):</label>
+                <textarea name="notes" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" placeholder="Any additional information...">{{ existing_status.notes|default:'' }}</textarea>
+            </div>
+
+            <!-- Info Box -->
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #2e7d32; margin: 0; font-size: 13px;">
+                    <strong>ℹ️ Note:</strong> When a student is Promoted, Repeated, or Demoted, 
+                    their student type will automatically change from <strong>NEW</strong> to <strong>OLD</strong>. 
+                    This means they will be charged returning student fees in the next academic year.
+                </p>
+            </div>
+
+            <!-- Submit -->
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" style="padding: 12px 24px; background: #1e3c72; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    💾 Save Status
+                </button>
+                <a href="{% url 'student_detail' student.id %}" style="padding: 12px 24px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.status-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+input[type="radio"]:checked + .status-btn {
+    border-width: 4px;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.3);
+    transform: scale(1.02);
+}
+</style>
+{% endblock %}

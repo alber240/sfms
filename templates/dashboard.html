@@ -89,6 +89,8 @@
         .btn-warning .desc { color: rgba(255,255,255,0.8); }
         .btn-academic { background: linear-gradient(135deg, #e44d26 0%, #f7971e 100%); color: white; }
         .btn-academic .desc { color: rgba(255,255,255,0.8); }
+        .btn-view-years { background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; }
+        .btn-view-years .desc { color: rgba(255,255,255,0.8); }
         .table {
             width: 100%;
             background: white;
@@ -108,8 +110,6 @@
             padding: 20px;
             margin-top: 30px;
         }
-        
-        /* Footer Styles */
         .sfms-footer {
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white;
@@ -139,7 +139,6 @@
             padding-top: 10px;
             display: inline-block;
         }
-        
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .buttons { grid-template-columns: 1fr 1fr; }
@@ -257,22 +256,22 @@
                 <div class="title">WhatsApp</div>
                 <div class="desc">Send payment reminders</div>
             </a>
-            
-            <!-- 📅 START NEW ACADEMIC YEAR BUTTON -->
-            <a href="{% url 'start_academic_year' %}" class="btn btn-academic">
-                <div class="icon">📅</div>
-                <div class="title">New Academic Year</div>
-                <div class="desc">Start fresh, reset balances</div>
-            </a>
-        
 
-<!-- 📅 View Academic Years -->
-<a href="{% url 'view_academic_year_default' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 40px 20px; text-align: center; text-decoration: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.2s; display: block;">
-    <div class="icon" style="font-size: 48px; margin-bottom: 10px;">📅</div>
-    <div class="title" style="font-size: 18px; font-weight: bold;">View Years</div>
-    <div class="desc" style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 5px;">View historical academic years</div>
-</a>
-      </div>  
+            <!-- 📅 YEAR TRANSITION WIZARD -->
+            <a href="{% url 'year_transition' %}" class="btn btn-academic">
+                <div class="icon">📅</div>
+                <div class="title">Year Transition</div>
+                <div class="desc">Start new year with wizard</div>
+            </a>
+
+            <!-- 📅 VIEW ACADEMIC YEARS -->
+            <a href="{% url 'view_academic_year_default' %}" class="btn btn-view-years">
+                <div class="icon">📋</div>
+                <div class="title">View Years</div>
+                <div class="desc">View historical academic years</div>
+            </a>
+        </div>
+        
         <div class="recent-section">
             <h3>Recent Transactions</h3>
             <table class="table">
@@ -329,7 +328,6 @@
     </div>
     
     <script>
-        // Load license information for footer
         function loadLicenseInfo() {
             fetch('/api/license-info/')
                 .then(function(response) { return response.json(); })
@@ -346,8 +344,6 @@
                     }
                 });
         }
-        
-        // Load license info when page loads
         loadLicenseInfo();
     </script>
 </body>

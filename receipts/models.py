@@ -4,6 +4,7 @@ from django.db import models
 from django.db import transaction
 from students.models import Student
 
+
 class ReceiptSequence(models.Model):
     """Atomic receipt number generator - survives power loss"""
     id = models.IntegerField(primary_key=True, default=1)
@@ -18,6 +19,7 @@ class ReceiptSequence(models.Model):
             sequence.last_number += 1
             sequence.save()
             return sequence.last_number
+
 
 class Receipt(models.Model):
     PAYMENT_METHODS = [
@@ -39,6 +41,10 @@ class Receipt(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='CASH')
     payment_period = models.CharField(max_length=10, choices=PAYMENT_PERIOD_CHOICES, default='FIRST')
     mobile_transaction_id = models.CharField(max_length=100, blank=True)
+    
+    # NEW: Link receipt to academic year
+    academic_year = models.CharField(max_length=20, default='2025-2026', db_index=True)
+    
     is_voided = models.BooleanField(default=False)
     void_reason = models.TextField(blank=True)
     is_legacy = models.BooleanField(default=False)
@@ -51,12 +57,21 @@ class Receipt(models.Model):
     
     def __str__(self):
         return f"Receipt #{self.receipt_number} - {self.student.full_name}"
+    
+    class Meta:
+        ordering = ['-payment_date', '-id']
+        indexes = [
+            models.Index(fields=['academic_year', 'payment_date']),
+            models.Index(fields=['student', 'academic_year']),
+        ]
+
+
 class PaymentAllocation(models.Model):
     """Track which fee category each payment applies to"""
     receipt = models.ForeignKey(Receipt, on_delete=models.CASCADE, related_name='allocations')
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, blank=True)
     fee_category = models.ForeignKey('fees.FeeCategory', on_delete=models.CASCADE)
-    academic_year = models.CharField(max_length=10, default='2024-2025')
+    academic_year = models.CharField(max_length=20, default='2025-2026', db_index=True)
     semester = models.CharField(max_length=10, choices=Receipt.PAYMENT_PERIOD_CHOICES, default='FIRST')
     amount_lrd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount_usd = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -64,3 +79,8 @@ class PaymentAllocation(models.Model):
     
     def __str__(self):
         return f"{self.receipt.receipt_number} - {self.fee_category.name}: {self.amount_lrd} LRD"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['academic_year', 'fee_category']),
+        ]

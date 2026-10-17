@@ -25,10 +25,11 @@ class AcademicSession(models.Model):
     name = models.CharField(max_length=50)
     academic_year = models.CharField(max_length=10, unique=True)
     is_active = models.BooleanField(default=False)
-    is_archived = models.BooleanField(default=False)  # ← ADD THIS
+    is_archived = models.BooleanField(default=False)
     current_semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES, default='FIRST')
     start_date = models.DateField()
     end_date = models.DateField()
+    previous_year = models.CharField(max_length=10, blank=True, null=True)  # ← NEW
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

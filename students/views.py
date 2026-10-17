@@ -6,6 +6,7 @@ from django.db.models import Q, Sum
 from .models import Student, Class
 from fees.models import StudentFeeLedger
 from receipts.models import Receipt
+from datetime import date, timedelta
 
 @login_required
 def student_list(request):
@@ -505,4 +506,97 @@ def class_delete(request, pk):
     return render(request, 'students/class_delete.html', {'class': class_obj})
 
 
-
+@login_required
+def change_student_status(request, pk):
+    """Change a student's status for a new academic year"""
+    from .models import StudentYearStatus
+    from fees.models import AcademicSession
+    from students.models import Class
+    
+    student = get_object_or_404(Student, pk=pk)
+    
+    # Get current academic year
+    current_session = AcademicSession.objects.filter(is_active=True).first()
+    if not current_session:
+        messages.error(request, 'No active academic year found.')
+        return redirect('student_detail', pk=student.id)
+    
+    # Get next academic year (you'll need to define this logic)
+    # For now, use the current year
+    academic_year = current_session.academic_year
+    
+    # Check if status already exists for this year
+    existing_status = StudentYearStatus.objects.filter(
+        student=student,
+        academic_year=academic_year
+    ).first()
+    
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        new_class_id = request.POST.get('new_class')
+        notes = request.POST.get('notes', '')
+        
+        if not status:
+            messages.error(request, 'Please select a status.')
+            return redirect('change_student_status', pk=student.id)
+        
+        new_class = None
+        if new_class_id:
+            new_class = get_object_or_404(Class, pk=new_class_id)
+        
+        # Determine new student type
+        new_type = 'OLD'  # Default: promoted/repeated/demoted → OLD
+        if status in ['LEAVE', 'DROPOUT']:
+            new_type = student.student_type  # Keep same type (inactive)
+        
+        # Create or update status
+        if existing_status:
+            existing_status.status = status
+            existing_status.new_class = new_class
+            existing_status.notes = notes
+            existing_status.new_type = new_type
+            existing_status.save()
+        else:
+            StudentYearStatus.objects.create(
+                student=student,
+                academic_year=academic_year,
+                previous_class=student.class_assigned,
+                new_class=new_class,
+                status=status,
+                previous_type=student.student_type,
+                new_type=new_type,
+                notes=notes
+            )
+        
+        # Update student record
+        if status in ['PROMOTED', 'REPEAT', 'DEMOTED']:
+            student.class_assigned = new_class
+            student.student_type = 'OLD'  # Automatically change to OLD
+            student.is_active = True
+            student.save()
+            messages.success(request, f'✅ {student.full_name} has been marked as {status}. Student type changed to OLD.')
+        elif status == 'LEAVE':
+            student.is_active = False
+            student.left_school_date = date.today()
+            student.archive_date = date.today() + timedelta(days=365)  # 1 year
+            student.save()
+            messages.warning(request, f'⚠️ {student.full_name} has left the school. Record will be archived in 1 year.')
+        elif status == 'DROPOUT':
+            student.is_active = False
+            student.dropout_date = date.today()
+            student.archive_date = date.today() + timedelta(days=365)  # 1 year
+            student.save()
+            messages.warning(request, f'⚠️ {student.full_name} has dropped out. Record will be archived in 1 year.')
+        
+        return redirect('student_detail', pk=student.id)
+    
+    # GET request - show form
+    classes = Class.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'student': student,
+        'classes': classes,
+        'current_year': academic_year,
+        'existing_status': existing_status,
+    }
+    return render(request, 'students/change_status.html', context)

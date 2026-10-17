@@ -97,10 +97,15 @@ def change_password(request):
 @login_required
 def dashboard_view(request):
     from .models import ExchangeRate
+    from fees.models import AcademicSession
     from datetime import date
     from django.db.models import Sum
     
     today = date.today()
+    
+    # Get active academic year
+    active_session = AcademicSession.objects.filter(is_active=True).first()
+    academic_year = active_session.academic_year if active_session else '2025-2026'
     
     # Get today's exchange rate or most recent
     exchange_rate_obj = ExchangeRate.objects.filter(rate_date=today).first()
@@ -109,22 +114,33 @@ def dashboard_view(request):
     
     exchange_rate = exchange_rate_obj.lrd_to_usd if exchange_rate_obj else 200
     
-    # Today's collections
-    today_receipts = Receipt.objects.filter(payment_date=today, is_voided=False)
+    # Today's collections - filter by academic year too
+    today_receipts = Receipt.objects.filter(
+        payment_date=today, 
+        is_voided=False,
+        academic_year=academic_year
+    )
     total_collected_lrd = today_receipts.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
     total_collected_usd = today_receipts.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
     
-    # Today's expenses
-    today_expenses = Expense.objects.filter(expense_date=today)
+    # Today's expenses - filter by academic year
+    today_expenses = Expense.objects.filter(
+        expense_date=today,
+        academic_year=academic_year
+    )
     total_expenses_lrd = today_expenses.aggregate(Sum('amount_lrd'))['amount_lrd__sum'] or 0
     total_expenses_usd = today_expenses.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
     
-    # Calculate net separately
+    # Calculate net
     net_lrd = total_collected_lrd - total_expenses_lrd
     net_usd = total_collected_usd - total_expenses_usd
     net_combined = net_lrd + (net_usd * exchange_rate)
     
-    recent_receipts = Receipt.objects.filter(is_voided=False).order_by('-payment_date', '-id')[:10]
+    # Recent receipts - filter by academic year
+    recent_receipts = Receipt.objects.filter(
+        is_voided=False,
+        academic_year=academic_year
+    ).order_by('-payment_date', '-id')[:10]
     
     context = {
         'total_collected_lrd': total_collected_lrd,
@@ -136,6 +152,7 @@ def dashboard_view(request):
         'net_combined': net_combined,
         'exchange_rate': exchange_rate,
         'recent_receipts': recent_receipts,
+        'academic_year': academic_year,
     }
     return render(request, 'dashboard.html', context)
 

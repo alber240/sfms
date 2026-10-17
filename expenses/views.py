@@ -1,13 +1,19 @@
-﻿from django.utils import timezone  # CHANGE THIS LINE
-
+﻿from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Expense, ExpenseCategory
+
+from fees.views import get_active_academic_year
+from .models import Expense, ExpenseCategory, ExpenseApproval
+
+
+# ============================================================
+# EXPENSE ADD
+# ============================================================
 
 @login_required
 def expense_add(request):
-    from .models import ExpenseApproval
+    """Record a new expense"""
     
     categories = ExpenseCategory.objects.all()
     
@@ -21,6 +27,9 @@ def expense_add(request):
                 messages.error(request, 'Please enter an amount in LRD or USD')
                 return redirect('expense_add')
             
+            # Get current academic year
+            academic_year = get_active_academic_year()
+            
             expense = Expense.objects.create(
                 category_id=category_id,
                 description=request.POST.get('description', ''),
@@ -28,6 +37,7 @@ def expense_add(request):
                 amount_usd=amount_usd,
                 notes=request.POST.get('notes', ''),
                 requested_by=request.user,
+                academic_year=academic_year,
             )
             
             # Create approval record
@@ -55,39 +65,83 @@ def expense_add(request):
     }
     return render(request, 'expenses/add.html', context)
 
+
+# ============================================================
+# EXPENSE LIST
+# ============================================================
+
 @login_required
 def expense_list(request):
-    expenses = Expense.objects.all().order_by('-expense_date')
-    return render(request, 'expenses/list.html', {'expenses': expenses})
+    """List expenses for the current academic year"""
+    
+    academic_year = get_active_academic_year()
+    
+    # Filter by current academic year
+    expenses = Expense.objects.filter(
+        academic_year=academic_year
+    ).order_by('-expense_date')
+    
+    return render(request, 'expenses/list.html', {
+        'expenses': expenses,
+        'academic_year': academic_year,
+    })
+
+
+# ============================================================
+# EXPENSE DELETE
+# ============================================================
 
 @login_required
 def expense_delete(request, pk):
+    """Delete an expense"""
+    
     expense = get_object_or_404(Expense, pk=pk)
+    
     if request.method == 'POST':
         if expense.receipt_photo:
             expense.receipt_photo.delete()
         expense.delete()
         messages.success(request, 'Expense deleted!')
         return redirect('expense_list')
+    
     return render(request, 'expenses/delete.html', {'expense': expense})
+
+
+# ============================================================
+# EXPENSE VIEW PHOTO
+# ============================================================
 
 @login_required
 def expense_view_photo(request, pk):
+    """View expense receipt photo"""
+    
     expense = get_object_or_404(Expense, pk=pk)
     return render(request, 'expenses/view_photo.html', {'expense': expense})
+
+
+# ============================================================
+# EXPENSE APPROVAL LIST (Principal only)
+# ============================================================
 
 @login_required
 def expense_approval_list(request):
     """List expenses pending approval (for principal)"""
-    from .models import ExpenseApproval
     
     if request.user.username != 'principal' and not request.user.username.startswith('pri_'):
         messages.error(request, 'Only principals can approve expenses')
         return redirect('expense_list')
     
-    pending_approvals = ExpenseApproval.objects.filter(status='PENDING').select_related('expense', 'expense__category')
-    approved_approvals = ExpenseApproval.objects.filter(status='APPROVED').select_related('expense', 'expense__category')[:20]
-    rejected_approvals = ExpenseApproval.objects.filter(status='REJECTED').select_related('expense', 'expense__category')[:20]
+    pending_approvals = ExpenseApproval.objects.filter(
+        status='PENDING'
+    ).select_related('expense', 'expense__category')
+    
+    approved_approvals = ExpenseApproval.objects.filter(
+        status='APPROVED'
+    ).select_related('expense', 'expense__category')[:20]
+    
+    rejected_approvals = ExpenseApproval.objects.filter(
+        status='REJECTED'
+    ).select_related('expense', 'expense__category')[:20]
     
     context = {
         'pending_approvals': pending_approvals,
@@ -97,10 +151,14 @@ def expense_approval_list(request):
     }
     return render(request, 'expenses/approval_list.html', context)
 
+
+# ============================================================
+# EXPENSE APPROVE (Principal only)
+# ============================================================
+
 @login_required
 def expense_approve(request, pk):
     """Approve an expense (principal only)"""
-    from .models import ExpenseApproval
     
     if request.user.username != 'principal' and not request.user.username.startswith('pri_'):
         messages.error(request, 'Only principals can approve expenses')
@@ -111,7 +169,7 @@ def expense_approve(request, pk):
     if request.method == 'POST':
         approval.status = 'APPROVED'
         approval.approved_by = request.user
-        approval.approved_at = timezone.now()  # Now works correctly
+        approval.approved_at = timezone.now()
         approval.approval_notes = request.POST.get('notes', '')
         approval.save()
         
@@ -120,10 +178,14 @@ def expense_approve(request, pk):
     
     return render(request, 'expenses/approve.html', {'approval': approval})
 
+
+# ============================================================
+# EXPENSE REJECT (Principal only)
+# ============================================================
+
 @login_required
 def expense_reject(request, pk):
     """Reject an expense (principal only)"""
-    from .models import ExpenseApproval
     
     if request.user.username != 'principal' and not request.user.username.startswith('pri_'):
         messages.error(request, 'Only principals can reject expenses')
@@ -134,7 +196,7 @@ def expense_reject(request, pk):
     if request.method == 'POST':
         approval.status = 'REJECTED'
         approval.rejected_by = request.user
-        approval.rejected_at = timezone.now()  # Now works correctly
+        approval.rejected_at = timezone.now()
         approval.rejection_reason = request.POST.get('reason', '')
         approval.save()
         
@@ -143,17 +205,21 @@ def expense_reject(request, pk):
     
     return render(request, 'expenses/reject.html', {'approval': approval})
 
+
+# ============================================================
+# EXPENSE MARK PAID (Accountant only)
+# ============================================================
+
 @login_required
 def expense_mark_paid(request, pk):
     """Mark approved expense as paid (accountant only)"""
-    from .models import ExpenseApproval
     
     approval = get_object_or_404(ExpenseApproval, pk=pk)
     
     if request.method == 'POST':
         approval.status = 'PAID'
         approval.paid_by = request.user
-        approval.paid_at = timezone.now()  # Now works correctly
+        approval.paid_at = timezone.now()
         approval.payment_reference = request.POST.get('payment_reference', '')
         approval.save()
         

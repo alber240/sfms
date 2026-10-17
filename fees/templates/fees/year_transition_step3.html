@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}New Year Transition - Step 3{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Progress Bar -->
+    <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+        <div style="flex: 1; text-align: center; padding: 10px; background: #28a745; color: white; border-radius: 5px; font-weight: bold;">
+            ✅ Step 1
+        </div>
+        <div style="flex: 1; text-align: center; padding: 10px; background: #28a745; color: white; border-radius: 5px; margin-left: 5px; font-weight: bold;">
+            ✅ Step 2
+        </div>
+        <div style="flex: 1; text-align: center; padding: 10px; background: #1e3c72; color: white; border-radius: 5px; margin-left: 5px; font-weight: bold;">
+            Step 3: Confirm
+        </div>
+    </div>
+
+    <div class="card" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #1e3c72;">⚠️ Confirm Year Transition</h1>
+        
+        <div style="background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #f5c6cb;">
+            <p style="color: #721c24; margin: 0;">
+                <strong>⚠️ Important:</strong> This action will:
+            </p>
+            <ul style="color: #721c24; margin: 10px 0 0 20px;">
+                <li>Archive the current year ({{ current_year.academic_year }})</li>
+                <li>Create new year ({{ new_year }})</li>
+                <li>Reset all fee balances to zero</li>
+                <li>Apply student status changes</li>
+            </ul>
+        </div>
+
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #2e7d32;">📋 Summary</h3>
+            <p><strong>Current Year:</strong> {{ current_year.academic_year }}</p>
+            <p><strong>New Year:</strong> {{ new_year }}</p>
+            <p><strong>Total Students:</strong> {{ student_count }}</p>
+            <p><strong>Students with Status:</strong> {{ status_count }}</p>
+        </div>
+
+        <!-- Hidden form with statuses for submission -->
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Include statuses as hidden fields -->
+            {% for key, value in statuses.items %}
+                {% if key != 'class_data' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+            {% endfor %}
+            
+            {% if statuses.class_data %}
+                {% for student_id, class_id in statuses.class_data.items %}
+                    <input type="hidden" name="class_{{ student_id }}" value="{{ class_id }}">
+                {% endfor %}
+            {% endif %}
+            
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button type="submit" style="padding: 15px 30px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    ✅ Confirm & Apply Changes
+                </button>
+                <a href="{% url 'year_transition_step2' %}" style="padding: 15px 30px; background: #ffc107; color: #856404; text-decoration: none; border-radius: 5px;">
+                    ← Go Back
+                </a>
+                <a href="{% url 'dashboard' %}" style="padding: 15px 30px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">
+                    ❌ Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

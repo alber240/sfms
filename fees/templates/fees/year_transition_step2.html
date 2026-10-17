@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}New Year Transition - Step 2{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Progress Bar -->
+    <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+        <div style="flex: 1; text-align: center; padding: 10px; background: #28a745; color: white; border-radius: 5px; font-weight: bold;">
+            ✅ Step 1
+        </div>
+        <div style="flex: 1; text-align: center; padding: 10px; background: #1e3c72; color: white; border-radius: 5px; margin-left: 5px; font-weight: bold;">
+            Step 2: Students
+        </div>
+        <div style="flex: 1; text-align: center; padding: 10px; background: #e0e0e0; color: #666; border-radius: 5px; margin-left: 5px;">
+            Step 3: Confirm
+        </div>
+    </div>
+
+    <div class="card" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #1e3c72;">👨‍🎓 Review Students</h1>
+        <p style="color: #666;">
+            Transitioning from <strong>{{ current_year.academic_year }}</strong> 
+            to <strong>{{ new_year }}</strong>
+        </p>
+
+        <!-- Info Box -->
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #90caf9;">
+            <p style="color: #1565c0; margin: 0; font-size: 13px;">
+                <strong>ℹ️ Note:</strong> Grade 12 students can only be <strong>Graduated</strong> or <strong>Dropped Out</strong> 
+                (Grade 12 is the final class in Liberian secondary schools).
+            </p>
+        </div>
+
+        <form method="post" action="{% url 'year_transition_step3' %}">
+            {% csrf_token %}
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f5f5f5;">
+                            <th style="padding: 10px; text-align: left;">Student</th>
+                            <th style="padding: 10px; text-align: left;">Current Class</th>
+                            <th style="padding: 10px; text-align: left;">Type</th>
+                            <th style="padding: 10px; text-align: left;">Status</th>
+                            <th style="padding: 10px; text-align: left;">New Class</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in student_data %}
+                        <tr style="border-bottom: 1px solid #eee; {% if data.is_final_grade %}background: #fff8e1;{% endif %}">
+                            <td style="padding: 10px;">
+                                <strong>{{ data.student.full_name }}</strong><br>
+                                <small style="color: #666;">{{ data.student.admission_number }}</small>
+                                {% if data.is_final_grade %}
+                                <br><small style="color: #e65100; font-weight: bold;">🎓 Final Grade</small>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 10px;">{{ data.student.get_class_name }}</td>
+                            <td style="padding: 10px;">
+                                <span style="color: {% if data.student.student_type == 'NEW' %}green{% else %}blue{% endif %};">
+                                    {{ data.student.get_student_type_display }}
+                                </span>
+                            </td>
+                            <td style="padding: 10px;">
+                                {% if data.is_final_grade %}
+                                <!-- Grade 12 students: Graduated or Dropout only -->
+                                <select name="status_{{ data.student.id }}" 
+                                        style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 150px;">
+                                    <option value="GRADUATED" selected>🎓 Graduated</option>
+                                    <option value="DROPOUT">❌ Drop Out</option>
+                                </select>
+                                {% else %}
+                                <!-- Other students: All options -->
+                                <select name="status_{{ data.student.id }}" 
+                                        style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 150px;"
+                                        onchange="toggleClassSelect(this, '{{ data.student.id }}')">
+                                    <option value="PROMOTED" selected>⬆️ Promoted</option>
+                                    <option value="REPEAT">🔄 Repeat</option>
+                                    <option value="DEMOTED">⬇️ Demoted</option>
+                                    <option value="LEAVE">🚪 Left School</option>
+                                    <option value="DROPOUT">❌ Drop Out</option>
+                                </select>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 10px;">
+                                {% if data.is_final_grade %}
+                                <span style="color: #999; font-style: italic;">N/A (Final Grade)</span>
+                                {% else %}
+                                <select name="class_{{ data.student.id }}" id="class_select_{{ data.student.id }}"
+                                        style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; width: 150px;">
+                                    {% for class in classes %}
+                                    <option value="{{ class.id }}" 
+                                        {% if data.suggested_class == class.id %}selected{% endif %}>
+                                        {{ class.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button type="submit" style="padding: 12px 24px; background: #1e3c72; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    Next: Confirm Changes →
+                </button>
+                <a href="{% url 'year_transition' %}" style="padding: 12px 24px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px;">
+                    ← Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleClassSelect(select, studentId) {
+    var classSelect = document.getElementById('class_select_' + studentId);
+    if (!classSelect) return;
+    
+    var status = select.value;
+    
+    if (status === 'LEAVE' || status === 'DROPOUT') {
+        classSelect.disabled = true;
+        classSelect.style.opacity = '0.5';
+    } else {
+        classSelect.disabled = false;
+        classSelect.style.opacity = '1';
+    }
+}
+
+// Run on page load for existing selections
+document.addEventListener('DOMContentLoaded', function() {
+    var selects = document.querySelectorAll('select[name^="status_"]');
+    selects.forEach(function(select) {
+        var studentId = select.name.replace('status_', '');
+        toggleClassSelect(select, studentId);
+    });
+});
+</script>
+{% endblock %}

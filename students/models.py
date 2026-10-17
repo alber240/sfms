@@ -53,3 +53,69 @@ class Student(models.Model):
     
     class Meta:
         ordering = ['last_name', 'first_name']
+
+class StudentYearStatus(models.Model):
+    """Track student status for each academic year"""
+    
+    STATUS_CHOICES = [
+        ('PROMOTED', 'Promoted'),
+        ('REPEAT', 'Repeating'),
+        ('DEMOTED', 'Demoted'),
+        ('GRADUATED', 'Graduated'),
+        ('LEAVE', 'Left School'),
+        ('DROPOUT', 'Dropped Out'),
+    ]
+    
+    TYPE_CHOICES = [
+        ('NEW', 'New Student'),
+        ('OLD', 'Returning Student'),
+    ]
+    
+    student = models.ForeignKey(
+        Student, 
+        on_delete=models.CASCADE, 
+        related_name='year_statuses'
+    )
+    academic_year = models.CharField(max_length=10)
+    previous_class = models.ForeignKey(
+        'Class', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='previous_class_statuses'
+    )
+    new_class = models.ForeignKey(
+        'Class', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='new_class_statuses'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    previous_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    new_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-academic_year', 'student__last_name', 'student__first_name']
+        unique_together = ['student', 'academic_year']
+        verbose_name_plural = "Student Year Statuses"
+    
+    def __str__(self):
+        return f"{self.student.full_name} - {self.academic_year} - {self.get_status_display()}"
+    
+    @property
+    def status_color(self):
+        colors = {
+            'PROMOTED': 'green',
+            'REPEAT': 'orange',
+            'DEMOTED': 'red',
+            'GRADUATED': 'blue',            
+            'LEVEL': 'gray',
+            'DROPOUT': 'darkred',
+            
+        }
+        return colors.get(self.status, 'black')

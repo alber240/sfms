@@ -15,6 +15,8 @@
             <a href="{% url 'student_delete' student.id %}" class="btn btn-danger">🗑️ Delete</a>
             {% endif %}
             <a href="{% url 'student_list' %}" class="btn btn-secondary">← Back</a>
+
+<a href="{% url 'change_student_status' student.id %}" class="btn btn-info" style="background: #17a2b8; color: white;">📋 Change Status</a>
         </div>
     </div>
 

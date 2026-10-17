@@ -98,4 +98,20 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance, require_password_change=True)
 
-post_save.connect(create_user_profile, sender=User)
+post_save.connect(create_user_profile, sender=User)\
+
+class SchoolRecovery(models.Model):
+    """Store school recovery information"""
+    recovery_key = models.CharField(max_length=50, unique=True)
+    school_name = models.CharField(max_length=200)
+    license_key = models.CharField(max_length=100)
+    supabase_url = models.CharField(max_length=200, blank=True)
+    supabase_key = models.CharField(max_length=500, blank=True)
+    last_sync = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.school_name} - {self.recovery_key}"
+    
+    class Meta:
+        verbose_name_plural = "School Recovery"
